@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" data-auth-mode="signup">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | Debrief</title>
+  <link rel="icon" type="image/png" href="debrief-mark-gold.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="debrief-viewer.20260430g.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <a class="brand-lockup" href="/" aria-label="Go to Debrief homepage">
+          <img class="brand-mark" src="debrief-mark-gold.png" alt="Debrief logo">
+          <p class="eyebrow">Debrief</p>
+        </a>
+        <h1 id="authPageTitle">Sign up for Debrief.</h1>
+        <p id="authPageCopy" class="hero-copy">Create your private training archive and start saving notes from class.</p>
+      </div>
+      <div id="topSession" class="top-session hidden">
+        <p id="topSessionEmail" class="muted"></p>
+        <button id="topLogoutButton" class="ghost" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <section id="accountCard" class="card">
+      <h2 id="accountCardTitle">Log In</h2>
+      <p id="runtimeHint" class="status"></p>
+      <form id="authForm" class="grid auth-grid" onsubmit="return false">
+        <section class="signup-plan-picker" aria-label="Choose a Debrief plan">
+          <div class="signup-plan-heading">
+            <p class="eyebrow compact">Choose your plan</p>
+            <h3>Start with 14 days of full access.</h3>
+          </div>
+          <label class="signup-plan-card selected">
+            <input type="radio" name="signupPlan" value="free" checked>
+            <span>
+              <strong>Full-access trial, then Free</strong>
+              <small>Use everything for 14 days. After that, Free includes 8 debriefs/month, private archive, search, and favourites.</small>
+            </span>
+            <em>$0</em>
+          </label>
+          <label class="signup-plan-card disabled-plan" aria-disabled="true">
+            <input type="radio" name="signupPlan" value="student_plus" disabled>
+            <span>
+              <strong>Pro</strong>
+              <small>More debriefs, sharing, CSV export, and fewer limits.</small>
+            </span>
+            <em>$5/mo</em>
+            <b>Stripe coming soon</b>
+          </label>
+          <label class="signup-plan-card disabled-plan" aria-disabled="true">
+            <input type="radio" name="signupPlan" value="club" disabled>
+            <span>
+              <strong>Club</strong>
+              <small>Coach tools, shared insights, and lightweight team tracking.</small>
+            </span>
+            <em>$29/mo</em>
+            <b>Beta invite</b>
+          </label>
+        </section>
+        <label>
+          Email
+          <input id="email" type="email" placeholder="you@example.com" autocomplete="username" required>
+        </label>
+        <label id="passwordField">
+          Password
+          <input id="password" type="password" placeholder="Your password" autocomplete="current-password">
+        </label>
+        <label id="signupConfirmField">
+          Confirm password
+          <input id="signupConfirmPassword" type="password" placeholder="Type the same password again" autocomplete="new-password">
+        </label>
+        <aside class="setup-helper-card" aria-label="Signup help">
+          <p class="eyebrow compact">First setup</p>
+          <h3>Use the email you want Telegram to save to.</h3>
+          <ul>
+            <li>Check the email spelling before you continue.</li>
+            <li>Use a password with at least 8 characters.</li>
+            <li>After signup, I will send you to Telegram setup.</li>
+          </ul>
+        </aside>
+        <div class="button-row auth-actions">
+          <button class="action" id="loginButton" type="button">Log In</button>
+          <div class="auth-secondary-actions">
+            <button class="ghost" id="emailLinkButton" type="button">Email Me a Login Link</button>
+            <button class="ghost" id="resetPasswordButton" type="button">Reset Password</button>
+          </div>
+          <button class="ghost hidden" id="logoutButton" type="button">Log Out</button>
+        </div>
+      </form>
+      <p id="authStatus" class="status"></p>
+      <div id="sessionBar" class="session-bar hidden">
+        <span id="sessionEmail" class="muted"></span>
+        <div class="button-row">
+          <button class="ghost" id="showAuthButton" type="button">Switch Account</button>
+          <button class="ghost" id="logoutButtonCompact" type="button">Log Out</button>
+        </div>
+      </div>
+      <form id="passwordResetForm" class="grid auth-grid hidden">
+        <label>
+          New password
+          <input id="newPassword" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+        </label>
+        <label>
+          Confirm new password
+          <input id="confirmPassword" type="password" placeholder="Re-enter password" autocomplete="new-password">
+        </label>
+        <div class="button-row">
+          <button class="action" id="savePasswordButton" type="button">Save New Password</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card hidden" id="appCard">
+      <section id="telegramLinkCard" class="telegram-link-card hidden" aria-live="polite">
+        <div>
+          <p class="eyebrow compact">Telegram</p>
+          <h2 id="telegramLinkTitle">Save Telegram notes here</h2>
+          <p id="telegramLinkCopy" class="muted">Copy the command below, send it to the Debrief bot, and future #debrief messages will save to this account.</p>
+        </div>
+        <div id="telegramLinkSteps" class="telegram-link-steps">
+          <div>
+            <span class="step-number">1</span>
+            <p>Open the Debrief bot in Telegram.</p>
+          </div>
+          <div class="telegram-code-step">
+            <span class="step-number">2</span>
+            <p>Telegram command:</p>
+            <button id="copyTelegramCodeButton" class="code-copy-button" type="button">
+              <strong id="telegramLinkCode">Preparing...</strong>
+              <span>Copy</span>
+            </button>
+          </div>
+          <div>
+            <span class="step-number">3</span>
+            <p>After it confirms, send training notes starting with <strong>#debrief</strong>.</p>
+          </div>
+        </div>
+        <div class="button-row telegram-link-actions">
+          <a id="openTelegramBotButton" class="action" href="https://t.me/BJJ_debrief_bot" target="_blank" rel="noreferrer">Open Telegram</a>
+          <button id="refreshTelegramLinkButton" class="ghost" type="button">Check Status</button>
+        </div>
+        <p id="telegramLinkStatus" class="status"></p>
+      </section>
+
+        <div class="toolbar">
+        <div>
+          <p class="eyebrow compact">Archive</p>
+          <h2>Debrief History</h2>
+          <p id="clubContextLabel" class="muted club-context-label">Loading club...</p>
+        </div>
+        <div class="button-row toolbar-actions">
+          <button id="menuButton" class="ghost" type="button" aria-expanded="false">Controls</button>
+        </div>
+      </div>
+      <section id="quotaNotice" class="quota-notice hidden" aria-live="polite"></section>
+      <section id="whatsNewNotice" class="whats-new-notice hidden" aria-live="polite"></section>
+
+      <div id="drawerScrim" class="drawer-scrim hidden"></div>
+      <aside id="controlDrawer" class="control-drawer hidden" aria-label="Debrief controls">
+        <div class="drawer-header">
+          <div>
+            <p class="eyebrow compact">Controls</p>
+            <h3>Find, filter, share</h3>
+          </div>
+          <button id="drawerCloseButton" class="ghost icon-button" type="button" aria-label="Close controls">Close</button>
+        </div>
+
+        <form id="filterForm" class="search-panel">
+          <div class="search-panel-header">
+            <div>
+              <p class="eyebrow compact">Find a note</p>
+              <h3>Search your archive</h3>
+            </div>
+            <p class="muted">Title, summary, topics, and raw notes are included.</p>
+          </div>
+
+          <div class="quick-filter-row" role="group" aria-label="Quick date filters">
+            <button class="quick-filter active-tab" type="button" data-range="all">All</button>
+            <button class="quick-filter" type="button" data-range="today">Today</button>
+            <button class="quick-filter" type="button" data-range="week">Week</button>
+          </div>
+
+          <div class="search-row">
+            <label class="search-field">
+              <span class="visually-hidden">Search</span>
+              <input id="topicSearch" type="search" placeholder="Try “half guard”, “pressure”, or “knee bar”">
+            </label>
+            <button class="action" type="submit">Search</button>
+            <button class="ghost" id="clearSearchButton" type="button">Clear</button>
+          </div>
+
+          <details class="advanced-search">
+            <summary>More filters</summary>
+            <div class="advanced-grid">
+              <input id="quickToday" class="hidden" type="checkbox" aria-hidden="true">
+              <label>
+                Date from
+                <input id="dateFrom" type="date">
+              </label>
+              <label>
+                Date to
+                <input id="dateTo" type="date">
+              </label>
+              <label>
+                Domain
+                <select id="domainFilter">
+                  <option value="">All domains</option>
+                  <option value="martial_arts">martial_arts</option>
+                  <option value="business">business</option>
+                  <option value="fitness">fitness</option>
+                  <option value="woodworking">woodworking</option>
+                  <option value="education">education</option>
+                  <option value="general">general</option>
+                  <option value="other">other</option>
+                </select>
+              </label>
+              <label>
+                Tags
+                <input id="tagSearch" type="text" placeholder="drilling, timing">
+              </label>
+            </div>
+          </details>
+        </form>
+
+        <details id="menuPanel" class="menu-panel compact-disclosure">
+          <summary>Views and feed</summary>
+          <div class="drawer-button-grid">
+            <button id="viewMineButton" class="ghost active-tab" type="button">My Notes</button>
+            <button id="viewSharedButton" class="ghost" type="button">Club Feed</button>
+            <button id="viewSharedWithMeButton" class="ghost" type="button">Shared With Me</button>
+            <button id="viewFavouritesButton" class="ghost" type="button">Favourites</button>
+          </div>
+          <button id="refreshButton" class="ghost drawer-wide-button" type="button">Refresh Feed</button>
+          <div class="share-feed-settings hidden" id="sharedSettings">
+            <label class="inline-toggle">
+              <input id="sharedOptIn" type="checkbox">
+              <span>Show shared notes from club members</span>
+            </label>
+            <p class="muted" id="sharedOptInStatus"></p>
+          </div>
+        </details>
+
+        <details id="exportPanel" class="export-panel compact-disclosure">
+          <summary>Export</summary>
+          <div class="search-panel-header compact-section-header">
+            <div>
+              <p class="eyebrow compact">Spreadsheet</p>
+              <h3>Export CSV</h3>
+            </div>
+            <p class="muted">Download your debriefs for spreadsheet review or safekeeping.</p>
+          </div>
+          <div class="drawer-button-grid">
+            <button id="exportCurrentButton" class="ghost" type="button">Export Current Results</button>
+            <button id="exportAllButton" class="action" type="button">Export All Mine</button>
+          </div>
+          <p id="exportStatus" class="muted"></p>
+        </details>
+
+        <details id="clubPanel" class="club-panel compact-disclosure">
+          <summary>Club access</summary>
+          <div class="search-panel-header compact-section-header">
+            <div>
+              <p class="eyebrow compact">Club</p>
+              <h3>Club Access</h3>
+            </div>
+            <p class="muted">Join a club, create one, or switch where new notes belong.</p>
+          </div>
+          <label>
+            Active club
+            <select id="activeClubSelect">
+              <option value="">Loading clubs...</option>
+            </select>
+          </label>
+          <div id="clubList" class="club-list"></div>
+          <div class="club-action-grid">
+            <label>
+              Invite code
+              <input id="clubInviteCode" type="text" placeholder="ABCD-1234" autocomplete="off">
+            </label>
+            <button id="joinClubButton" class="action" type="button">Join Club</button>
+          </div>
+          <div class="club-action-grid">
+            <label>
+              New club
+              <input id="newClubName" type="text" placeholder="Your club name" autocomplete="organization">
+            </label>
+            <button id="createClubButton" class="ghost" type="button">Create Club</button>
+          </div>
+          <p id="clubPanelStatus" class="muted"></p>
+        </details>
+
+        <section id="sharePanel" class="share-panel hidden">
+          <div class="share-panel-header">
+            <div>
+              <p class="eyebrow compact">Sharing</p>
+              <h3 id="sharePanelTitle">Share this debrief</h3>
+            </div>
+          </div>
+          <label class="share-option">
+            <input id="shareWholeClub" type="checkbox">
+            <span>
+              <strong>Whole club</strong>
+              <small>Appears in the club feed for members who enable it.</small>
+            </span>
+          </label>
+          <div class="share-people-block">
+            <p class="drawer-label">People</p>
+            <div id="sharePeopleList" class="share-people-list">
+              <p class="muted">Open a debrief you own to choose people.</p>
+            </div>
+          </div>
+          <p id="sharePanelStatus" class="muted"></p>
+          <div class="drawer-button-grid">
+            <button id="saveShareSettingsButton" class="action" type="button">Save Sharing</button>
+            <button id="stopSharingButton" class="ghost" type="button">Make Private</button>
+          </div>
+        </section>
+      </aside>
+
+      <p id="listStatus" class="status"></p>
+
+      <div class="content-grid">
+        <aside class="list-shell">
+          <div class="list-header">
+            <div class="list-header-main">
+              <span>Timeline</span>
+              <span id="listCountBadge" class="count-badge">0</span>
+            </div>
+            <div id="paginationControls" class="pagination-row hidden" aria-label="Timeline pages"></div>
+          </div>
+          <div id="entryList" class="entry-list"></div>
+        </aside>
+        <article id="entryDetail" class="detail-panel">
+          <p class="muted">Select a debrief to view details.</p>
+        </article>
+      </div>
+
+    </section>
+  </div>
+
+  <script src="login-fallback.20260430g.js"></script>
+  <script type="module" src="debrief-viewer.20260430g.js"></script>
+</body>
+</html>
+

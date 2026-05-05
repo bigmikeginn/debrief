@@ -1,0 +1,28 @@
+# Vercel local config
+.vercel/
+
+# Supabase local temp state
+beta-v1/supabase/.temp/
+supabase/.temp/
+
+# Environment files with secrets
+.env
+.env.*
+beta-v1/.env.beta
+!beta-v1/.env.beta.example
+
+# Playwright test artifacts
+.playwright-cli/
+test-results/
+
+# Node
+node_modules/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Editor config (optional, keep .vscode/settings.json if useful)
+*.swp
+*.swo
+*~

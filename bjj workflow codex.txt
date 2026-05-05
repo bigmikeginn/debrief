@@ -1,0 +1,114 @@
+{
+  "name": "Debrief Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst text = (input.message?.text || input.text || '').trim();\n\nif (!text.toLowerCase().startsWith('#debrief')) {\n  return [];\n}\n\nconst now = new Date();\nconst torontoNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));\nconst day = torontoNow.getDay();\nconst hour = torontoNow.getHours();\nconst minute = torontoNow.getMinutes();\nconst mins = hour * 60 + minute;\nconst inWindow = (day === 2 || day === 4) && mins >= (10 * 60 + 30) && mins <= (12 * 60 + 30);\n\nif (!inWindow) {\n  return [];\n}\n\nconst cleaned = text.replace(/^#debrief\\s*/i, '').trim();\n\nreturn [{\n  json: {\n    ...input,\n    text: cleaned\n  }\n}];"
+      },
+      "id": "check-debrief",
+      "name": "Check for #debrief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.text;\nconst apiKey = 'PASTE_NEW_CLAUDE_KEY_HERE';\nconst today = new Date().toISOString().slice(0, 10);\n\nif (!apiKey || apiKey.includes('PASTE_')) {\n  throw new Error('Claude API key is missing in Parse with Claude node.');\n}\n\ntry {\n  const response = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://api.anthropic.com/v1/messages',\n    headers: {\n      'x-api-key': apiKey,\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    json: true,\n    body: {\n      model: 'claude-3-5-sonnet-20241022',\n      max_tokens: 500,\n      temperature: 0.2,\n      messages: [\n        {\n          role: 'user',\n          content: `Parse this Debrief into JSON with exactly these fields:\\n- date (YYYY-MM-DD, use ${today} if not specified)\\n- technique (main technique as string)\\n- keyPoints (array of 2-3 key points as strings)\\n- reflections (personal insights as string)\\n\\nReturn ONLY valid JSON, no markdown.\\n\\nNote: ${text}`\n        }\n      ]\n    }\n  });\n\n  const raw = response?.content?.[0]?.text ?? '{}';\n  const cleaned = raw\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  const parsed = JSON.parse(cleaned);\n\n  return [{\n    json: {\n      Date: parsed.date || today,\n      Technique: parsed.technique || '',\n      'Key Points': Array.isArray(parsed.keyPoints) ? parsed.keyPoints.join(' | ') : (parsed.keyPoints || ''),\n      Reflections: parsed.reflections || '',\n      'Raw Notes': text\n    }\n  }];\n} catch (err) {\n  const details = err?.response?.body ? JSON.stringify(err.response.body) : err.message;\n  throw new Error(`Claude request failed: ${details}`);\n}"
+      },
+      "id": "parse-claude",
+      "name": "Parse with Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1ksBgr7s9uZJp-skQ83DBdeG19NxQa1hEwb5s0zq9SA0"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        },
+        "options": {}
+      },
+      "id": "append-sheet",
+      "name": "Append to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1020,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check for #debrief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for #debrief": {
+      "main": [
+        [
+          {
+            "node": "Parse with Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse with Claude": {
+      "main": [
+        [
+          {
+            "node": "Append to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "versionId": "debrief-v1"
+}
+

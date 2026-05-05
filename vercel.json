@@ -1,0 +1,30 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/setup", "destination": "/setup.html" },
+    { "source": "/setup/", "destination": "/setup.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/login/", "destination": "/login.html" },
+    { "source": "/login-fresh", "destination": "/login.html" },
+    { "source": "/login-fresh/", "destination": "/login.html" },
+    { "source": "/telegram-connect", "destination": "/telegram-connect.html" },
+    { "source": "/telegram-connect/", "destination": "/telegram-connect.html" },
+    { "source": "/telegram-check", "destination": "/telegram-check.html" },
+    { "source": "/telegram-check/", "destination": "/telegram-check.html" },
+    { "source": "/telegram-confirmed", "destination": "/telegram-confirmed.html" },
+    { "source": "/telegram-confirmed/", "destination": "/telegram-confirmed.html" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/signup/", "destination": "/signup.html" },
+    { "source": "/viewer", "destination": "/debrief-viewer.html" },
+    { "source": "/viewer/", "destination": "/debrief-viewer.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checking Telegram | Debrief</title>
+  <link rel="icon" type="image/png" href="debrief-mark-gold.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="debrief-viewer.20260430c.css">
+</head>
+<body>
+  <main class="shell telegram-check-shell">
+    <section class="telegram-check-card" aria-live="polite">
+      <a class="brand-lockup" href="/" aria-label="Go to Debrief homepage">
+        <img class="brand-mark" src="debrief-mark-gold.png" alt="Debrief logo">
+        <p class="eyebrow">Debrief</p>
+      </a>
+      <h1 id="telegramCheckTitle">Checking Telegram.</h1>
+      <p id="telegramCheckCopy" class="muted">Give me a moment while I confirm where your Telegram notes are saving.</p>
+      <div id="telegramProgress" class="telegram-progress" aria-hidden="true"></div>
+      <ul class="telegram-check-list">
+        <li>Confirming your Debrief login</li>
+        <li>Checking the Telegram destination</li>
+        <li>Opening your notes as soon as it is ready</li>
+      </ul>
+      <details class="onboarding-help">
+        <summary>If this keeps waiting</summary>
+        <p>Open Telegram and confirm you sent the command to the Debrief bot. The message should start with <strong>/save_to</strong>. You can also send <strong>/status</strong> to check which Debrief email Telegram is using.</p>
+      </details>
+      <div class="button-row telegram-link-actions">
+        <a id="telegramCheckOpenBot" class="action" href="https://t.me/BJJ_debrief_bot" target="_blank" rel="noreferrer">Open Telegram</a>
+        <button id="telegramCheckAgain" class="ghost" type="button">Check Again</button>
+        <a id="telegramCheckBack" class="ghost" href="/telegram-connect">Back to Telegram Setup</a>
+      </div>
+      <p id="telegramCheckStatus" class="status"></p>
+    </section>
+  </main>
+  <script type="module" src="telegram-check.20260429.js"></script>
+</body>
+</html>

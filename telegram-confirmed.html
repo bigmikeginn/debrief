@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Connected | Debrief</title>
+  <link rel="icon" type="image/png" href="debrief-mark-gold.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="debrief-viewer.20260430c.css">
+</head>
+<body>
+  <main class="shell telegram-check-shell">
+    <section class="telegram-check-card" aria-live="polite">
+      <a class="brand-lockup" href="/" aria-label="Go to Debrief homepage">
+        <img class="brand-mark" src="debrief-mark-gold.png" alt="Debrief logo">
+        <p class="eyebrow">Debrief</p>
+      </a>
+      <p class="eyebrow compact">Step 3 of 3</p>
+      <h1>Telegram is connected.</h1>
+      <p id="telegramConfirmedCopy" class="muted">Future Telegram notes that start with #debrief will save to your Debrief account.</p>
+      <div class="onboarding-callout first-note-callout">
+        <strong>Send one test note now.</strong>
+        <p>In Telegram, message the Debrief bot with this exact format:</p>
+        <button id="copyFirstDebrief" class="code-copy-button onboarding-code-button" type="button">
+          <strong>#debrief Today we drilled guard retention. I need to frame earlier and keep my knees tighter.</strong>
+          <span>Copy</span>
+        </button>
+      </div>
+      <ul class="telegram-check-list">
+        <li>Your account is ready</li>
+        <li>Telegram is connected</li>
+        <li>Notes must start with #debrief</li>
+        <li>Your archive is opening next</li>
+      </ul>
+      <div class="button-row telegram-link-actions">
+        <a class="action" href="/viewer">Open My Debriefs</a>
+      </div>
+      <p id="telegramConfirmedStatus" class="status">Opening your Debrief history...</p>
+    </section>
+  </main>
+  <script type="module" src="telegram-confirmed.20260429.js"></script>
+</body>
+</html>

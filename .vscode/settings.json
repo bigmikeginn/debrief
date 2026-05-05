@@ -1,0 +1,63 @@
+{
+  "github.copilot.chat.agent.autoFix": true,
+
+  "workbench.colorTheme": "Dark+",
+
+  "workbench.colorCustomizations": {
+    "editor.background": "#000000",
+    "editor.foreground": "#00cc66",
+    "sideBar.background": "#000000",
+    "editorLineNumber.foreground": "#006633",
+    "editorLineNumber.activeForeground": "#00cc66",
+    "editorCursor.foreground": "#00ff88",
+    "editor.selectionBackground": "#003322",
+    "editor.inactiveSelectionBackground": "#002211"
+  },
+
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": ["comment"],
+        "settings": {
+          "foreground": "#007744",
+          "fontStyle": "italic"
+        }
+      },
+      {
+        "scope": ["keyword", "storage"],
+        "settings": {
+          "foreground": "#00ff88"
+        }
+      },
+      {
+        "scope": ["string"],
+        "settings": {
+          "foreground": "#33ff99"
+        }
+      },
+      {
+        "scope": ["variable", "identifier"],
+        "settings": {
+          "foreground": "#00cc66"
+        }
+      },
+      {
+        "scope": ["function"],
+        "settings": {
+          "foreground": "#66ffb2"
+        }
+      }
+    ]
+  },
+
+  "editor.fontSize": 16,
+  "editor.lineHeight": 26,
+  "editor.fontLigatures": false,
+
+  "editor.cursorBlinking": "smooth",
+  "editor.smoothScrolling": true,
+  "workbench.list.smoothScrolling": true,
+
+  "editor.minimap.enabled": false,
+  "breadcrumbs.enabled": false
+}

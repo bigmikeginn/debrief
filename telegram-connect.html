@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect Telegram | Debrief</title>
+  <link rel="icon" type="image/png" href="debrief-mark-gold.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="debrief-viewer.20260430c.css">
+</head>
+<body>
+  <main class="shell telegram-check-shell">
+    <section class="telegram-check-card" aria-live="polite">
+      <a class="brand-lockup" href="/" aria-label="Go to Debrief homepage">
+        <img class="brand-mark" src="debrief-mark-gold.png" alt="Debrief logo">
+        <p class="eyebrow">Debrief</p>
+      </a>
+      <p class="eyebrow compact">Step 2 of 3</p>
+      <h1>Connect Telegram.</h1>
+      <p id="telegramConnectCopy" class="muted">Copy this command, open the Debrief bot, and paste it into Telegram.</p>
+      <div class="onboarding-callout">
+        <strong id="telegramConnectAccount">Checking your Debrief email...</strong>
+        <p>Telegram can save to one Debrief account at a time. Use the command on this page if you want future notes from your Telegram account to save here.</p>
+      </div>
+      <button id="telegramConnectCommand" class="code-copy-button onboarding-code-button" type="button">
+        <strong id="telegramConnectCode">Preparing...</strong>
+        <span>Copy</span>
+      </button>
+      <ul class="telegram-check-list">
+        <li>Tap Copy. Do not retype the command by hand.</li>
+        <li>Open the Debrief bot, not your class group chat.</li>
+        <li>Paste and send the command, then wait for the bot reply.</li>
+        <li>Return here and tap I Sent It.</li>
+      </ul>
+      <details class="onboarding-help">
+        <summary>If something feels off</summary>
+        <p>Send <strong>/status</strong> to the Debrief bot to see the current destination email. Send this page's command again if Telegram is saving to the wrong Debrief account.</p>
+      </details>
+      <div class="button-row telegram-link-actions">
+        <a id="telegramConnectOpenBot" class="action" href="https://t.me/BJJ_debrief_bot" target="_blank" rel="noreferrer">Open Telegram</a>
+        <a class="ghost" href="/telegram-check">I Sent It</a>
+      </div>
+      <p id="telegramConnectStatus" class="status"></p>
+    </section>
+  </main>
+  <script type="module" src="telegram-connect.20260429.js"></script>
+</body>
+</html>
