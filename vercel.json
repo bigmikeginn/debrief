@@ -8,18 +8,42 @@
     { "source": "/login/", "destination": "/login.html" },
     { "source": "/login-fresh", "destination": "/login.html" },
     { "source": "/login-fresh/", "destination": "/login.html" },
-    { "source": "/telegram-connect", "destination": "/telegram-connect.html" },
-    { "source": "/telegram-connect/", "destination": "/telegram-connect.html" },
-    { "source": "/telegram-check", "destination": "/telegram-check.html" },
-    { "source": "/telegram-check/", "destination": "/telegram-check.html" },
-    { "source": "/telegram-confirmed", "destination": "/telegram-confirmed.html" },
-    { "source": "/telegram-confirmed/", "destination": "/telegram-confirmed.html" },
     { "source": "/signup", "destination": "/signup.html" },
     { "source": "/signup/", "destination": "/signup.html" },
     { "source": "/viewer", "destination": "/debrief-viewer.html" },
     { "source": "/viewer/", "destination": "/debrief-viewer.html" }
   ],
   "headers": [
+    {
+      "source": "/debrief-viewer\\.[a-f0-9]+\\.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/debrief-viewer\\.[a-f0-9]+\\.css",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/login-fallback\\.[a-f0-9]+\\.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(login|signup|viewer|debrief-viewer)\\.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/deploy-manifest\\.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
