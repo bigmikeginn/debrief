@@ -23,7 +23,10 @@
       </div>
       <div id="topSession" class="top-session hidden">
         <p id="topSessionEmail" class="muted"></p>
-        <button id="topLogoutButton" class="ghost" type="button">Log Out</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <a id="analyticsLink" href="/analytics" class="ghost" style="text-decoration: none; display: none; padding: 0.5rem 1rem; font-size: 0.9rem;">📊 Analytics</a>
+          <button id="topLogoutButton" class="ghost" type="button">Log Out</button>
+        </div>
       </div>
     </header>
 
@@ -315,6 +318,42 @@
       </div>
     </div>
   </div>
+
+  <script>
+    // Show analytics link only for owner
+    const OWNER_USER_ID = localStorage.getItem('owner_id') || null;
+
+    // Listen for session updates to show/hide analytics link
+    window.addEventListener('storage', function() {
+      checkAnalyticsAccess();
+    });
+
+    // Also check immediately when topSession becomes visible
+    const topSession = document.getElementById('topSession');
+    const analyticsLink = document.getElementById('analyticsLink');
+
+    if (topSession) {
+      const observer = new MutationObserver(checkAnalyticsAccess);
+      observer.observe(topSession, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    function checkAnalyticsAccess() {
+      const currentUser = localStorage.getItem('user_id') || null;
+      const ownerUser = localStorage.getItem('owner_id') || null;
+
+      if (analyticsLink && topSession && !topSession.classList.contains('hidden')) {
+        // Show analytics link if: owner_id is set AND current user matches owner
+        if (ownerUser && currentUser === ownerUser) {
+          analyticsLink.style.display = 'inline-block';
+        } else {
+          analyticsLink.style.display = 'none';
+        }
+      }
+    }
+
+    // Initial check after a short delay to allow storage to be loaded
+    setTimeout(checkAnalyticsAccess, 100);
+  </script>
 
   <script src="load-assets.js"></script>
 </body>
