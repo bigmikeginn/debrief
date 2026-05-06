@@ -2720,6 +2720,38 @@ function closeNewDebriefModal() {
   newDebriefModalOverlay.classList.add("hidden");
 }
 
+async function pollParseStatus(debriefId) {
+  const maxWaitSeconds = 120;
+  const pollIntervalMs = 2000;
+  const endTime = Date.now() + maxWaitSeconds * 1000;
+
+  while (Date.now() < endTime) {
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/get-parse-status?debrief_id=${debriefId}`,
+        { headers: { apikey: SUPABASE_PUBLISHABLE_KEY } }
+      );
+      const data = await response.json();
+
+      if (data.parse_status === "ready" || data.parse_status === "needs_review") {
+        return true; // Parse complete
+      }
+      if (data.parse_status === "failed") {
+        return false; // Parse failed but still show note
+      }
+
+      // Still parsing, wait and retry
+      await new Promise((resolve) => window.setTimeout(resolve, pollIntervalMs));
+    } catch (err) {
+      // Network error, stop polling but don't fail
+      console.log("Poll error (continuing):", err);
+      break;
+    }
+  }
+
+  return false; // Timeout or network issue
+}
+
 async function handleNativeSubmit() {
   if (!supabase || !currentUser || !activeClubId) {
     setNewDebriefStatus("Please log in and join a club first.", true);
@@ -2741,9 +2773,19 @@ async function handleNativeSubmit() {
   try {
     const edgeResult = await submitViaEdgeFunction(currentUser.id, activeClubId, text);
     if (edgeResult.ok) {
-      setNewDebriefStatus("Saved! Your note will appear in the timeline after analysis.", false);
+      const debriefId = edgeResult.debrief_id;
+      setNewDebriefStatus("Saved! Analyzing your training note...", false);
       if (newDebriefText) newDebriefText.value = "";
-      window.setTimeout(() => closeNewDebriefModal(), 1200);
+
+      // Poll for parse completion
+      const parsed = await pollParseStatus(debriefId);
+      if (parsed) {
+        setNewDebriefStatus("✅ Analysis complete! Your note is now in the timeline.", false);
+      } else {
+        setNewDebriefStatus("Note saved. Analysis is still running, will appear shortly.", false);
+      }
+
+      window.setTimeout(() => closeNewDebriefModal(), 1500);
       await loadEntries({ reset: true });
       return;
     }
@@ -2751,7 +2793,7 @@ async function handleNativeSubmit() {
   } catch (err) {
     try {
       await submitViaDirectInsert(currentUser.id, activeClubId, text);
-      setNewDebriefStatus("Saved! Refresh to see your note in the timeline.", false);
+      setNewDebriefStatus("Saved! Your note will appear after analysis.", false);
       if (newDebriefText) newDebriefText.value = "";
       window.setTimeout(() => closeNewDebriefModal(), 1200);
       await loadEntries({ reset: true });
