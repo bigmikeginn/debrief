@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         action_items: [],
         parse_status: "refining",
         parse_stage: 0,
-        parse_confidence: 0.5,
+        parse_confidence: 0,
         parse_attempts: 0,
         needs_review: false,
         parser_version: "v2-native-submit",
