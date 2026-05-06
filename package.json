@@ -4,7 +4,7 @@
   "description": "Training note archive and analysis",
   "private": true,
   "scripts": {
-    "build": "bash build.sh",
+    "build": "echo 'Assets are pre-built and committed to git'",
     "deploy": "bash deploy.sh"
   },
   "dependencies": {},
