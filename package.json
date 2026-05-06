@@ -1,0 +1,14 @@
+{
+  "name": "debrief",
+  "version": "1.0.0",
+  "description": "Training note archive and analysis",
+  "private": true,
+  "scripts": {
+    "build": "bash build.sh",
+    "deploy": "bash deploy.sh"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}
