@@ -3,7 +3,6 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = "https://wtmzcwsfetqhfrdlygyr.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_bLuHb3b4yECOGg5IG9evag_rTZbzioA";
 const PAGE_SIZE = 10;
-const TELEGRAM_BOT_USERNAME = "BJJ_debrief_bot";
 const SUPABASE_AUTH_STORAGE_KEY = "sb-wtmzcwsfetqhfrdlygyr-auth-token";
 const FREE_MONTHLY_DEBRIEF_LIMIT = 8;
 const QUOTA_WARNING_RATIO = 0.75;
@@ -35,7 +34,6 @@ let activeShareWholeClub = false;
 let inPasswordRecovery = false;
 let emailCooldownUntil = 0;
 let quickRange = "all";
-let currentTelegramLinkCode = "";
 let handlingSignedInSession = false;
 let planStatus = defaultFreePlanStatus();
 const authMode = getAuthMode();
@@ -132,15 +130,6 @@ const joinClubButton = document.querySelector("#joinClubButton");
 const newClubNameInput = document.querySelector("#newClubName");
 const createClubButton = document.querySelector("#createClubButton");
 const clubPanelStatus = document.querySelector("#clubPanelStatus");
-const telegramLinkCard = document.querySelector("#telegramLinkCard");
-const telegramLinkTitle = document.querySelector("#telegramLinkTitle");
-const telegramLinkCopy = document.querySelector("#telegramLinkCopy");
-const telegramLinkCode = document.querySelector("#telegramLinkCode");
-const telegramLinkSteps = document.querySelector("#telegramLinkSteps");
-const telegramLinkStatus = document.querySelector("#telegramLinkStatus");
-const openTelegramBotButton = document.querySelector("#openTelegramBotButton");
-const refreshTelegramLinkButton = document.querySelector("#refreshTelegramLinkButton");
-const copyTelegramCodeButton = document.querySelector("#copyTelegramCodeButton");
 
 boot();
 
@@ -184,8 +173,6 @@ function boot() {
   if (menuButton) menuButton.addEventListener("click", toggleMenuPanel);
   if (drawerCloseButton) drawerCloseButton.addEventListener("click", closeMenuPanel);
   if (drawerScrim) drawerScrim.addEventListener("click", closeMenuPanel);
-  if (refreshTelegramLinkButton) refreshTelegramLinkButton.addEventListener("click", handleTelegramStatusCheck);
-  if (copyTelegramCodeButton) copyTelegramCodeButton.addEventListener("click", copyTelegramLinkCode);
   if (quickTodayInput) quickTodayInput.addEventListener("change", handleQuickTodayToggle);
   if (clearSearchButton) clearSearchButton.addEventListener("click", handleClearSearch);
   quickFilterButtons.forEach((button) => {
@@ -242,10 +229,6 @@ function boot() {
   });
   document.addEventListener("click", handleGlobalClick);
   document.addEventListener("click", handleDelegatedActions);
-  window.addEventListener("focus", refreshTelegramStateOnReturn);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) refreshTelegramStateOnReturn();
-  });
 
   renderRuntimeHint();
   renderRecoveryState();
@@ -684,21 +667,6 @@ async function copyClubInvite(code) {
   }
 }
 
-function refreshTelegramStateOnReturn() {
-  if (!currentUser || !telegramLinkCard || telegramLinkCard.classList.contains("hidden")) return;
-  loadTelegramLinkState({ forceNewCode: false });
-}
-
-function handleTelegramStatusCheck() {
-  if (!currentUser) {
-    setTelegramLinkStatus("Log in first, then check the Telegram connection.", true);
-    return;
-  }
-  const checkUrl = new URL("/telegram-check", window.location.origin);
-  checkUrl.searchParams.set("from", authMode === "signup" ? "signup" : "login");
-  window.location.href = checkUrl.toString();
-}
-
 function toggleTopSessionPanel() {
   if (!topSessionPanel || !topSessionButton) return;
   const willShow = topSessionPanel.classList.contains("hidden");
@@ -810,13 +778,11 @@ async function handleSignedInSession() {
   handlingSignedInSession = true;
 
   try {
-    const linkStatus = await getMyTelegramLinkStatus();
     if (pageKind === "login" || pageKind === "signup") {
       redirectTo("/viewer");
       return;
     }
 
-    if (telegramLinkCard) telegramLinkCard.classList.add("hidden");
     await loadClubContext();
     await loadPlanStatus();
   renderWhatsNewNotice();
@@ -863,21 +829,6 @@ async function loadViewerPreferences() {
     renderEntryList();
     renderEntryDetail();
   }
-}
-
-async function getMyTelegramLinkStatus() {
-  if (!supabase || !currentUser) return null;
-  try {
-    const result = await withTimeout(
-      supabase.rpc("get_my_telegram_link_status"),
-      6000,
-      "Telegram link check took too long.",
-    );
-    if (!result.error) return result.data || null;
-  } catch (_error) {
-    // Keep the flow moving to the setup page if the status check is unavailable.
-  }
-  return null;
 }
 
 function redirectTo(path) {
@@ -1185,7 +1136,6 @@ function renderAuthState() {
     if (sessionBar) sessionBar.classList.toggle("hidden", pageKind !== "viewer");
     if (authForm) authForm.classList.add("hidden");
     if (logoutButton) logoutButton.classList.remove("hidden");
-    if (telegramLinkCard) telegramLinkCard.classList.add("hidden");
     setAuthStatus(pageKind === "viewer" ? `Logged in as ${currentUser.email}` : "Logged in. Sending you to the next step...", false);
     renderClubContext();
     renderWhatsNewNotice();
@@ -1199,7 +1149,6 @@ function renderAuthState() {
     if (authForm) authForm.classList.remove("hidden");
     if (signupConfirmation) signupConfirmation.classList.add("hidden");
     if (logoutButton) logoutButton.classList.add("hidden");
-    if (telegramLinkCard) telegramLinkCard.classList.add("hidden");
     entries = [];
     favouriteIds = new Set();
     clubContext = { active_club_id: null, clubs: [] };
@@ -1224,178 +1173,6 @@ function renderSignedInHeader() {
     authPageCopy.textContent = "Review your training notes, saved lessons, and shared club insights.";
   }
   if (accountCardTitle) accountCardTitle.textContent = "Account";
-}
-
-async function loadTelegramLinkState({ forceNewCode = false } = {}) {
-  if (!supabase || !currentUser || !telegramLinkCard) return;
-  currentTelegramLinkCode = "";
-  if (telegramLinkCode) telegramLinkCode.textContent = "Preparing...";
-  if (openTelegramBotButton) {
-    openTelegramBotButton.href = `https://t.me/${TELEGRAM_BOT_USERNAME}`;
-    openTelegramBotButton.textContent = "Open Telegram";
-  }
-  setTelegramLinkStatus("Checking Telegram link...", false);
-
-  try {
-    const statusResult = await withTimeout(
-      supabase.rpc("get_my_telegram_link_status"),
-      6000,
-      "Telegram link check took too long.",
-    );
-
-    if (!statusResult.error && statusResult.data?.is_linked) {
-      renderTelegramLinked(statusResult.data.linked_at);
-      return;
-    }
-
-    if (statusResult.error && !isMissingRelationError(statusResult.error)) {
-      setTelegramLinkStatus("No Telegram link found for this account yet.", false);
-    }
-  } catch (_error) {
-    setTelegramLinkStatus("Preparing Telegram setup...", false);
-  }
-
-  try {
-    renderTelegramSaveToCommand();
-  } catch (error) {
-    if (telegramLinkCode) telegramLinkCode.textContent = "Try again";
-    setTelegramLinkStatus(error?.message || "Could not prepare Telegram setup.", true);
-  }
-}
-
-async function getTelegramLinkCode(forceNewCode) {
-  try {
-    const { data, error } = await withTimeout(
-      supabase.rpc("create_telegram_link_code", { force_new: forceNewCode }),
-      12000,
-      "Supabase client timed out creating the Telegram code.",
-    );
-
-    if (error) {
-      throw new Error(error.message || "Could not create Telegram code.");
-    }
-
-    if (!data) throw new Error("Supabase did not return a Telegram code.");
-    return data;
-  } catch (error) {
-    console.warn("Supabase client code creation failed; trying direct fetch.", error);
-    return getTelegramLinkCodeWithFetch(forceNewCode);
-  }
-}
-
-async function getTelegramLinkCodeWithFetch(forceNewCode) {
-  const sessionResult = await withTimeout(
-    supabase.auth.getSession(),
-    8000,
-    "Could not confirm your login session. Log out and back in, then try again.",
-  );
-  const accessToken = sessionResult?.data?.session?.access_token;
-  if (!accessToken) {
-    throw new Error("Your login session expired. Log out and back in, then try again.");
-  }
-
-  const response = await fetchWithTimeout(
-    `${SUPABASE_URL}/rest/v1/rpc/create_telegram_link_code`,
-    {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-        authorization: `Bearer ${accessToken}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ force_new: forceNewCode }),
-    },
-    15000,
-    "Creating the Telegram code took too long. Try New Code.",
-  );
-
-  const text = await response.text();
-  if (!response.ok) {
-    let message = text || "Could not create Telegram code.";
-    try {
-      const parsed = JSON.parse(text);
-      message = parsed.message || parsed.error || message;
-    } catch (_error) {
-      // Keep the plain response text.
-    }
-    throw new Error(message);
-  }
-
-  const code = text.replace(/^"|"$/g, "").trim();
-  if (!code) throw new Error("Supabase did not return a Telegram code.");
-  return code;
-}
-
-function renderTelegramLinkCode(code) {
-  const botUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=link_${encodeURIComponent(code)}`;
-  const accountEmail = currentUser?.email || "this Debrief account";
-  currentTelegramLinkCode = `/link ${code}`;
-  if (telegramLinkTitle) telegramLinkTitle.textContent = `Save Telegram notes to ${accountEmail}`;
-  if (telegramLinkCopy) {
-    telegramLinkCopy.textContent = `Telegram can save to one Debrief account at a time. Send this code to make future #debrief messages save to ${accountEmail}.`;
-  }
-  if (telegramLinkCode) telegramLinkCode.textContent = currentTelegramLinkCode;
-  if (telegramLinkSteps) telegramLinkSteps.classList.remove("hidden");
-  if (openTelegramBotButton) {
-    openTelegramBotButton.href = botUrl;
-    openTelegramBotButton.textContent = "Move Telegram to This Account";
-    openTelegramBotButton.removeAttribute("aria-disabled");
-  }
-  setTelegramLinkStatus("Tip: send /status in Telegram anytime to see the current destination account.", false);
-}
-
-function renderTelegramSaveToCommand() {
-  const accountEmail = currentUser?.email || "";
-  const botUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}`;
-  currentTelegramLinkCode = `/save_to ${accountEmail}`;
-  if (telegramLinkTitle) telegramLinkTitle.textContent = `Save Telegram notes to ${accountEmail}`;
-  if (telegramLinkCopy) {
-    telegramLinkCopy.textContent = `Copy this command, send it only to the Debrief bot, and future #debrief messages from Telegram will save to ${accountEmail}.`;
-  }
-  if (telegramLinkCode) telegramLinkCode.textContent = currentTelegramLinkCode;
-  if (telegramLinkSteps) telegramLinkSteps.classList.remove("hidden");
-  if (openTelegramBotButton) {
-    openTelegramBotButton.href = botUrl;
-    openTelegramBotButton.textContent = "Open Telegram";
-    openTelegramBotButton.removeAttribute("aria-disabled");
-  }
-  setTelegramLinkStatus("Do not send this to your class chat. After the bot replies, tap Check Status or send /status in Telegram.", false);
-}
-
-function renderTelegramLinked(linkedAt) {
-  const linkedDate = linkedAt ? new Date(linkedAt).toLocaleDateString() : "recently";
-  const accountEmail = currentUser?.email || "this Debrief account";
-  if (telegramLinkTitle) telegramLinkTitle.textContent = `Telegram saves to ${accountEmail}`;
-  if (telegramLinkCopy) {
-    telegramLinkCopy.textContent = `Telegram notes will save to ${accountEmail}. Send notes to the Debrief bot starting with #debrief.`;
-  }
-  if (telegramLinkSteps) telegramLinkSteps.classList.add("hidden");
-  if (openTelegramBotButton) {
-    openTelegramBotButton.href = `https://t.me/${TELEGRAM_BOT_USERNAME}`;
-    openTelegramBotButton.textContent = "Open Debrief Bot";
-    openTelegramBotButton.removeAttribute("aria-disabled");
-  }
-  setTelegramLinkStatus(`Connected ${linkedDate}. Future #debrief messages save to ${accountEmail}.`, false);
-}
-
-async function copyTelegramLinkCode() {
-  if (!currentTelegramLinkCode) {
-    setTelegramLinkStatus("The Telegram command is still being prepared. Try Check Status if it does not appear.", true);
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(currentTelegramLinkCode);
-    setTelegramLinkStatus("Command copied. Paste it into the Debrief bot.", false);
-  } catch (_error) {
-    setTelegramLinkStatus(`Copy this command: ${currentTelegramLinkCode}`, false);
-  }
-}
-
-function setTelegramLinkStatus(message, isError) {
-  if (!telegramLinkStatus) return;
-  telegramLinkStatus.textContent = message;
-  telegramLinkStatus.style.color = isError ? "#ff9e9e" : "#cfe7ff";
 }
 
 function isMissingRelationError(error) {
@@ -2001,7 +1778,7 @@ function renderEntryList() {
 
   if (entries.length === 0) {
     entryList.innerHTML = currentView === "mine"
-      ? '<div class="first-note-panel"><p class="eyebrow compact">First note</p><strong>Send a Telegram note that starts with #debrief.</strong><p>Example: #debrief Today we worked guard retention. I need to frame earlier and keep my knees tighter.</p><a class="ghost" href="https://t.me/BJJ_debrief_bot" target="_blank" rel="noreferrer">Open Debrief Bot</a></div>'
+      ? '<div class="first-note-panel"><p class="eyebrow compact">First note</p><strong>Create your first debrief.</strong><p>Example: Today we worked guard retention. I need to frame earlier and keep my knees tighter.</p><button class="ghost" id="newDebriefButton" type="button">New Debrief</button></div>'
       : "";
     return;
   }
@@ -2038,9 +1815,9 @@ function renderEntryDetail() {
   const entry = entries.find((item) => item.id === activeEntryId);
   if (!entry) {
     entryDetail.innerHTML = currentView === "mine"
-      ? '<section class="first-note-panel detail-first-note"><p class="eyebrow compact">Nothing here yet</p><h3>Make your first Debrief note in Telegram.</h3><p>Send the Debrief bot a message beginning with <strong>#debrief</strong>. One or two sentences is enough. After the bot replies, return here and use Refresh Feed.</p><pre>#debrief Today we drilled guard retention. I need to frame earlier and keep my knees tighter.</pre><div class="button-row"><a class="action" href="https://t.me/BJJ_debrief_bot" target="_blank" rel="noreferrer">Open Debrief Bot</a><button class="ghost" type="button" id="emptyRefreshButton">Refresh Feed</button></div></section>'
+      ? '<section class="first-note-panel detail-first-note"><p class="eyebrow compact">Nothing here yet</p><h3>Create your first debrief.</h3><p>One or two sentences is enough. Tap the <strong>New Debrief</strong> button to add a training note.</p><p>Example: Today we drilled guard retention. I need to frame earlier and keep my knees tighter.</p><div class="button-row"><button class="action" type="button" id="emptyNewDebriefButton">New Debrief</button></div></section>'
       : '<p class="muted">Select a debrief to view details.</p>';
-    document.querySelector("#emptyRefreshButton")?.addEventListener("click", () => loadEntries({ reset: true }));
+    document.querySelector("#emptyNewDebriefButton")?.addEventListener("click", openNewDebriefModal);
     return;
   }
 
