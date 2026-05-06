@@ -31,9 +31,11 @@ Thumbs.db
 # Keep unminified source files (.20260430g) for comparison during development
 debrief-viewer.[a-f0-9]*.js
 debrief-viewer.[a-f0-9]*.css
+debrief-touch-feedback.[a-f0-9]*.js
 login-fallback.[a-f0-9]*.js
 !debrief-viewer.20260430g.js
 !debrief-viewer.20260430g.css
+!debrief-touch-feedback.20260430g.js
 !login-fallback.20260430g.js
 # Keep latest minified versions (deployed to production)
 !debrief-viewer.36c808a4.js
