@@ -1,8 +1,9 @@
 {
-  "timestamp": "2026-05-06T18:24:49Z",
+  "timestamp": "2026-05-06T21:39:56Z",
   "assets": {
-    "css": "debrief-viewer.59924d12.css",
+    "css": "debrief-viewer.16e3f99e.css",
     "js": "debrief-viewer.36c808a4.js",
+    "touchFeedback": "debrief-touch-feedback.a700bae0.js",
     "fallback": "login-fallback.92d54de8.js"
   }
 }
