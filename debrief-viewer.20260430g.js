@@ -1899,7 +1899,15 @@ function renderEntryDetail() {
         </div>
         <div class="detail-block">
           <h3>Parse Status</h3>
-          <p>${escapeHtml(entry.parse_status || "unknown")} · stage ${escapeHtml(entry.parse_stage ?? 0)} · confidence ${escapeHtml(parseConfidence)}</p>
+          <div class="parse-status-indicator ${getParseStatusClass(entry)}">
+            ${getParseStatusDisplay(entry)}
+          </div>
+          ${entry.parse_status === "failed" ? `
+            <button id="retryParseButton" class="ghost" style="margin-top:0.5rem" type="button">Retry Analysis</button>
+          ` : ""}
+          ${entry.parse_status === "refining" || entry.parse_status === "queued" ? `
+            <button id="refreshParseButton" class="ghost" style="margin-top:0.5rem" type="button">Refresh Status</button>
+          ` : ""}
         </div>
       </div>
       <details class="raw-note-disclosure">
@@ -1929,6 +1937,39 @@ function renderEntryDetail() {
     backToTimelineButton.addEventListener("click", () => {
       appCard?.classList.remove("detail-open");
       entryList?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+  const retryParseButton = document.querySelector("#retryParseButton");
+  if (retryParseButton) {
+    retryParseButton.addEventListener("click", async () => {
+      if (!entry) return;
+      retryParseButton.disabled = true;
+      try {
+        await retryParseForEntry(entry.id);
+        showToast("Parse retry queued", "info");
+        await loadEntries({ reset: false });
+        renderEntryDetail();
+      } catch (err) {
+        showToast("Failed to queue retry: " + err.message, "error");
+      } finally {
+        retryParseButton.disabled = false;
+      }
+    });
+  }
+  const refreshParseButton = document.querySelector("#refreshParseButton");
+  if (refreshParseButton) {
+    refreshParseButton.addEventListener("click", async () => {
+      if (!entry) return;
+      refreshParseButton.disabled = true;
+      try {
+        await loadEntries({ reset: false });
+        renderEntryDetail();
+        showToast("Status refreshed", "info", 2000);
+      } catch (err) {
+        showToast("Failed to refresh: " + err.message, "error");
+      } finally {
+        refreshParseButton.disabled = false;
+      }
     });
   }
 }
@@ -2741,9 +2782,10 @@ async function handleNativeSubmit() {
   try {
     const edgeResult = await submitViaEdgeFunction(currentUser.id, activeClubId, text);
     if (edgeResult.ok) {
-      setNewDebriefStatus("Saved! Your note will appear in the timeline after analysis.", false);
+      showToast("✅ Debrief saved and submitted for analysis!", "success");
+      setNewDebriefStatus("Saved! Your note is being analyzed...", false);
       if (newDebriefText) newDebriefText.value = "";
-      window.setTimeout(() => closeNewDebriefModal(), 1200);
+      window.setTimeout(() => closeNewDebriefModal(), 1500);
       await loadEntries({ reset: true });
       return;
     }
@@ -2751,11 +2793,13 @@ async function handleNativeSubmit() {
   } catch (err) {
     try {
       await submitViaDirectInsert(currentUser.id, activeClubId, text);
-      setNewDebriefStatus("Saved! Refresh to see your note in the timeline.", false);
+      showToast("✅ Debrief saved!", "success");
+      setNewDebriefStatus("Saved! Your note is being analyzed...", false);
       if (newDebriefText) newDebriefText.value = "";
-      window.setTimeout(() => closeNewDebriefModal(), 1200);
+      window.setTimeout(() => closeNewDebriefModal(), 1500);
       await loadEntries({ reset: true });
     } catch (fallbackErr) {
+      showToast("Error saving debrief", "error");
       setNewDebriefStatus(fallbackErr?.message || "Could not save your debrief. Check your connection and try again.", true);
     }
   } finally {
@@ -2859,7 +2903,94 @@ function setNewDebriefStatus(message, isError) {
   newDebriefStatus.style.color = isError ? "#ff9e9e" : "#cfe7ff";
 }
 
+// ---- Toast Notifications ----
+
+function showToast(message, type = "info", duration = 3000) {
+  const container = document.getElementById("toastContainer") || createToastContainer();
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  if (duration > 0) {
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+  return toast;
+}
+
+function createToastContainer() {
+  const container = document.createElement("div");
+  container.id = "toastContainer";
+  container.className = "toast-container";
+  document.body.appendChild(container);
+  return container;
+}
+
+// ---- Parse Status Rendering ----
+
+function getParseStatusDisplay(entry) {
+  const status = entry.parse_status || "unknown";
+  const confidence = typeof entry.parse_confidence === "number"
+    ? Math.round(entry.parse_confidence * 100)
+    : null;
+
+  if (status === "ready") {
+    return `✅ Parsed successfully${confidence ? ` (${confidence}% confidence)` : ""}`;
+  }
+  if (status === "needs_review") {
+    return `⚠️ Needs review${confidence ? ` (${confidence}% confidence)` : ""}`;
+  }
+  if (status === "refining" || status === "queued") {
+    return `⏳ Parsing your training note... (Est. 30 seconds)`;
+  }
+  if (status === "failed") {
+    return `❌ Parsing failed. Check your note and try again.`;
+  }
+  return `Processing...`;
+}
+
+function getParseStatusClass(entry) {
+  const status = entry.parse_status || "unknown";
+  if (status === "ready") return "ready";
+  if (status === "needs_review") return "needs-review";
+  if (status === "refining" || status === "queued") return "parsing";
+  if (status === "failed") return "failed";
+  return "unknown";
+}
+
 // ---- Parse Retry Logic ----
+
+async function retryParseForEntry(debriefId) {
+  if (!supabase) throw new Error("Supabase not initialized");
+
+  const { data: existingJobs } = await supabase
+    .from("parse_jobs")
+    .select("id,status")
+    .eq("debrief_id", debriefId)
+    .in("status", ["queued", "running", "retry"])
+    .limit(1);
+
+  if (existingJobs && existingJobs.length > 0) {
+    throw new Error("A parse job is already queued for this debrief");
+  }
+
+  const { error } = await supabase
+    .from("parse_jobs")
+    .insert({
+      debrief_id: debriefId,
+      status: "queued",
+      stage: 0,
+      locked_at: null,
+      locked_by: null,
+      attempts: 0,
+      last_error: null,
+    });
+
+  if (error) throw new Error(error.message || "Failed to queue parse job");
+}
 
 async function retryStuckParseJobs() {
   if (!supabase || !currentUser) return;

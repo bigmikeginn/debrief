@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     const debriefId = debrief.id as string;
 
     // Enqueue parse job stage 1
-    const { error: enqueueError } = await supabase
+    const { data: parseJob, error: enqueueError } = await supabase
       .from("parse_jobs")
       .insert({
         debrief_id: debriefId,
@@ -115,10 +115,15 @@ Deno.serve(async (req) => {
         status: "queued",
         attempts: 0,
         run_after: new Date().toISOString(),
-      });
+      })
+      .select("id")
+      .single();
 
+    let parseJobId = null;
     if (enqueueError) {
       console.error("Failed to enqueue parse job", enqueueError);
+    } else {
+      parseJobId = parseJob?.id;
     }
 
     // Trigger the refiner in the background (fire-and-forget)
@@ -144,6 +149,7 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       debrief_id: debriefId,
+      parse_job_id: parseJobId,
       parse_status: "refining",
       message: "Debrief saved. Analysis will appear in your timeline shortly.",
     });
