@@ -2693,10 +2693,10 @@ function formatFriendlyDate(value) {
 
 function escapeHtml(value) {
   var text = String(value ?? "");
-  text = text.split("&").join("&");
-  text = text.split("<").join("<");
-  text = text.split(">").join(">");
-  text = text.split('"').join(""");
+  text = text.split("&").join("&amp;");
+  text = text.split("<").join("&lt;");
+  text = text.split(">").join("&gt;");
+  text = text.split('"').join("&quot;");
   text = text.split("'").join("&#039;");
   return text;
 }
