@@ -1,4 +1,5 @@
 {
+  "buildCommand": "echo 'Static files only - no build step required'",
   "outputDirectory": ".",
   "cleanUrls": true,
   "rewrites": [
