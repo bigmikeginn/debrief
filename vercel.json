@@ -15,37 +15,37 @@
   ],
   "headers": [
     {
-      "source": "/debrief-viewer\\.[a-f0-9]+\\.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/debrief-viewer\\.[a-f0-9]+\\.css",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/login-fallback\\.[a-f0-9]+\\.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/(login|signup|viewer|debrief-viewer)\\.html",
+      "source": "/login.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
     },
     {
-      "source": "/deploy-manifest\\.json",
+      "source": "/signup.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
     },
     {
-      "source": "/(.*)",
+      "source": "/viewer.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/debrief-viewer.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/deploy-manifest.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/load-assets.js",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
