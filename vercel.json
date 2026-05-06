@@ -1,4 +1,5 @@
 {
+  "name": "debrief",
   "buildCommand": "echo 'Static files only - no build step required'",
   "outputDirectory": ".",
   "cleanUrls": true,
@@ -67,19 +68,25 @@
       ]
     },
     {
-      "source": "/debrief-viewer.*.js",
+      "source": "/debrief-viewer\\.[a-f0-9]{8}\\.js",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
-      "source": "/debrief-viewer.*.css",
+      "source": "/debrief-viewer\\.[a-f0-9]{8}\\.css",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
-      "source": "/login-fallback.*.js",
+      "source": "/debrief-touch-feedback\\.[a-f0-9]{8}\\.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/login-fallback\\.[a-f0-9]{8}\\.js",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
