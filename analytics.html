@@ -25,20 +25,173 @@
     .metric-value { font-weight: 600; font-size: 1.1rem; color: #1976d2; }
     .loading { color: #999; font-style: italic; font-size: 0.85rem; }
     .error { color: #d32f2f; }
-    .controls { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; align-items: center; }
-    .controls input[type="date"], .controls button { padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 0.25rem; font-size: 0.9rem; }
-    .controls input[type="date"] { background: white; }
-    .controls button { background: #1976d2; color: white; border: none; cursor: pointer; font-weight: 500; }
-    .controls button:hover { background: #1565c0; }
-    .controls button:active { background: #0d47a1; }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .controls input[type="date"], .controls button {
+      padding: 0.75rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 0.375rem;
+      font-size: 0.9rem;
+      min-height: 2.75rem;
+      font-family: inherit;
+    }
+    .controls input[type="date"] {
+      background: white;
+      color: #333;
+    }
+    .controls button {
+      background: #1976d2;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 150ms ease;
+    }
+    .controls button:hover {
+      background: #1565c0;
+    }
+    .controls button:active {
+      background: #0d47a1;
+      opacity: 0.8;
+    }
     .export-btn { margin-left: auto; }
+
+    /* PHASE 4D: ANALYTICS MOBILE OPTIMIZATIONS */
+
+    /* Responsive controls layout */
+    @media (max-width: 800px) {
+      .controls {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .controls input[type="date"],
+      .controls button {
+        width: 100%;
+        padding: 0.85rem;
+      }
+      .export-btn {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+
+    /* Tablet layout (600px-800px) */
+    @media (max-width: 800px) and (min-width: 600px) {
+      .sections-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Mobile layout (<600px) */
     @media (max-width: 600px) {
-      .sections-grid { grid-template-columns: 1fr; }
-      .controls { flex-direction: column; }
-      .controls button { width: 100%; }
-      .export-btn { margin-left: 0; }
-      .analytics-header { padding: 0 1rem; }
-      body { padding: 1rem; }
+      body {
+        padding: 1rem;
+      }
+      .analytics-header {
+        margin-bottom: 1.5rem;
+      }
+      .analytics-header h1 {
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        margin: 0;
+      }
+      .analytics-header p {
+        font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+      }
+
+      /* Single column on mobile */
+      .sections-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+
+      /* Reduce section padding */
+      .section {
+        padding: 1.25rem;
+        border-radius: 0.375rem;
+      }
+
+      /* Stack controls vertically */
+      .controls {
+        flex-direction: column;
+      }
+      .controls input[type="date"],
+      .controls button {
+        width: 100%;
+        padding: 0.85rem;
+        font-size: 1rem;
+        min-height: 3rem;
+      }
+      .export-btn {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      /* Optimize section headers */
+      .section h2 {
+        margin: 0 0 1rem 0;
+        font-size: clamp(1rem, 3.5vw, 1.25rem);
+        padding-bottom: 0.5rem;
+      }
+
+      /* Metric optimization */
+      .metric {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        padding: 0.65rem 0;
+        align-items: center;
+      }
+      .metric:last-child {
+        border-bottom: none;
+      }
+      .metric-label {
+        font-size: clamp(0.85rem, 2.2vw, 0.9rem);
+      }
+      .metric-value {
+        font-size: clamp(1rem, 3vw, 1.1rem);
+      }
+    }
+
+    /* Extra small phones (<380px) */
+    @media (max-width: 380px) {
+      body {
+        padding: 0.75rem;
+      }
+      .analytics-header {
+        margin-bottom: 1rem;
+      }
+      .section {
+        padding: 1rem;
+      }
+      .controls input[type="date"],
+      .controls button {
+        font-size: 0.95rem;
+        padding: 0.75rem;
+        min-height: 2.75rem;
+      }
+    }
+
+    /* Loading and error states */
+    .loading {
+      display: inline-block;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .error {
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      background: #ffebee;
+      color: #d32f2f;
     }
   </style>
 </head>

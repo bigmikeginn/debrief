@@ -92,11 +92,11 @@
         <div>
           <p class="eyebrow compact">Archive</p>
           <h2>Debrief History</h2>
-          <p id="clubContextLabel" class="muted club-context-label">Loading club...</p>
+          <p id="clubContextLabel" class="muted club-context-label">Club: <span id="activeClubDisplay">Loading...</span></p>
         </div>
         <div class="button-row toolbar-actions">
           <button id="newDebriefButton" class="action" type="button">New Debrief</button>
-          <button id="menuButton" class="ghost" type="button" aria-expanded="false">Controls</button>
+          <button id="menuButton" class="ghost" type="button" aria-expanded="false" title="Search, filter, views, sharing, export">Search & Filter</button>
         </div>
       </div>
       <section id="quotaNotice" class="quota-notice hidden" aria-live="polite"></section>
@@ -233,6 +233,11 @@
             </label>
             <button id="createClubButton" class="ghost" type="button">Create Club</button>
           </div>
+          <div class="free-user-notice hidden" id="freeUserClubNotice">
+            <p class="eyebrow compact">Plan Limitation</p>
+            <h3>Sharing requires Pro</h3>
+            <p class="muted">Your account is on the Free plan. Club sharing is a Pro feature. <a href="/account?tab=billing" style="color: #ffca76; text-decoration: underline;">Upgrade now</a> to share debriefs with club members.</p>
+          </div>
           <p id="clubPanelStatus" class="muted"></p>
         </details>
 
@@ -295,12 +300,16 @@
               <span>Timeline</span>
               <span id="listCountBadge" class="count-badge">0</span>
             </div>
+            <p id="filterStateReminder" class="muted" style="font-size: 0.85rem; margin: 0.5rem 0; display: none;"></p>
             <div id="paginationControls" class="pagination-row hidden" aria-label="Timeline pages"></div>
           </div>
           <div id="entryList" class="entry-list"></div>
         </aside>
         <article id="entryDetail" class="detail-panel">
-          <p class="muted">Select a debrief to view details.</p>
+          <div id="emptyStateContainer" style="padding: 2rem; text-align: center;">
+            <p class="muted" id="emptyStateMessage">Select a debrief to view details.</p>
+            <button id="emptyStateActionButton" class="ghost" type="button" style="margin-top: 1rem; display: none;">Create Debrief</button>
+          </div>
         </article>
       </div>
 

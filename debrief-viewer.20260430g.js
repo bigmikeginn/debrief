@@ -27,6 +27,9 @@ let favouriteIds = new Set();
 let clubMembers = [];
 let clubContext = { active_club_id: null, clubs: [] };
 let adminMemberLists = {};
+// B2: Cache for club members (pre-loaded on login)
+let clubMembersCache = {};
+let clubMembersCacheTime = {};
 let activeClubId = null;
 let activeShareEntry = null;
 let activeShareRecipientIds = new Set();
@@ -80,6 +83,7 @@ const exportStatus = document.querySelector("#exportStatus");
 const entryList = document.querySelector("#entryList");
 const entryDetail = document.querySelector("#entryDetail");
 const listCountBadge = document.querySelector("#listCountBadge");
+const filterStateReminder = document.querySelector("#filterStateReminder");
 
 const viewMineButton = document.querySelector("#viewMineButton");
 const viewSharedButton = document.querySelector("#viewSharedButton");
@@ -130,6 +134,7 @@ const joinClubButton = document.querySelector("#joinClubButton");
 const newClubNameInput = document.querySelector("#newClubName");
 const createClubButton = document.querySelector("#createClubButton");
 const clubPanelStatus = document.querySelector("#clubPanelStatus");
+const freeUserClubNotice = document.querySelector("#freeUserClubNotice");
 
 boot();
 
@@ -374,6 +379,7 @@ function applyQuickRange(range, { load = true } = {}) {
   }
 
   renderQuickRange();
+  updateFilterStateReminder(); // B5: Show active filter state
   if (load) loadEntries({ reset: true });
 }
 
@@ -381,6 +387,35 @@ function renderQuickRange() {
   quickFilterButtons.forEach((button) => {
     button.classList.toggle("active-tab", (button.dataset.range || "all") === quickRange);
   });
+}
+
+// B5: Update filter state reminder
+function updateFilterStateReminder() {
+  if (!filterStateReminder) return;
+
+  const dateFrom = document.querySelector("#dateFrom")?.value || "";
+  const dateTo = document.querySelector("#dateTo")?.value || "";
+  const domainFilter = (document.querySelector("#domainFilter")?.value || "").trim();
+
+  const filters = [];
+  if (domainFilter) filters.push(`domain: ${domainFilter}`);
+  if (dateFrom && dateTo) filters.push(`${dateFrom} to ${dateTo}`);
+  else if (dateFrom) filters.push(`from ${dateFrom}`);
+  else if (dateTo) filters.push(`to ${dateTo}`);
+
+  if (filters.length === 0) {
+    filterStateReminder.style.display = "none";
+    filterStateReminder.innerHTML = "";
+    return;
+  }
+
+  filterStateReminder.style.display = "block";
+  filterStateReminder.innerHTML = `
+    Filtered by ${filters.join(" | ")}
+    <button class="ghost" type="button" id="clearFiltersBtn" style="margin-left: 0.5rem; font-size: 0.85rem;">Clear</button>
+  `;
+  const clearBtn = document.querySelector("#clearFiltersBtn");
+  if (clearBtn) clearBtn.addEventListener("click", handleClearSearch);
 }
 
 function getStartOfWeek(date) {
@@ -494,6 +529,12 @@ function renderClubContext() {
     clubContextLabel.textContent = activeClub
       ? `Active club: ${activeClub.name}`
       : "No club selected yet.";
+  }
+
+  // Also update activeClubDisplay span if it exists (A5: Club context clarity)
+  const activeClubDisplay = document.querySelector("#activeClubDisplay");
+  if (activeClubDisplay) {
+    activeClubDisplay.textContent = activeClub ? activeClub.name : "None selected";
   }
 
   if (activeClubSelect) {
@@ -613,6 +654,12 @@ async function handleActiveClubChange() {
     return;
   }
   applyClubContext(data);
+  // B4: Show toast confirmation of club change
+  const clubs = data?.clubs || [];
+  const newClub = clubs.find((c) => c.id === clubId);
+  if (newClub) {
+    showToast(`Active club is now ${newClub.name}.`, "info", 2000);
+  }
   await loadPlanStatus();
   renderPlanGates();
   renderQuotaNotice();
@@ -784,6 +831,7 @@ async function handleSignedInSession() {
     }
 
     await loadClubContext();
+    preloadActiveClubMembers(); // B2: Pre-load members to avoid modal lag (fire & forget)
     await loadPlanStatus();
   renderWhatsNewNotice();
   renderViewState();
@@ -1383,6 +1431,20 @@ function renderPlanGates() {
     sharedOptInStatus.textContent = "Club sharing is available on paid plans.";
     sharedOptInStatus.style.color = "#cfe7ff";
   }
+  checkUserPlanForSharing();
+}
+
+// B6: Check user plan and disable sharing for free users
+function checkUserPlanForSharing() {
+  const isFree = isFreePlan();
+  if (freeUserClubNotice) {
+    freeUserClubNotice.classList.toggle("hidden", !isFree);
+  }
+  if (saveShareSettingsButton) {
+    saveShareSettingsButton.disabled = isFree;
+    saveShareSettingsButton.title = isFree ? "Pro feature: Upgrade to share" : "Save sharing settings";
+    saveShareSettingsButton.classList.toggle("disabled", isFree);
+  }
 }
 
 function renderQuotaNotice() {
@@ -1965,6 +2027,7 @@ async function openSharePanel(entry) {
         <input id="shareWholeClub" type="checkbox" ${wcChecked}>
         <span><strong>Whole club</strong><small>Appears in the club feed for members who enable it.</small></span>
       </label>
+      ${activeShareWholeClub ? '<p class="muted" style="font-size:0.85rem; margin:-0.5rem 0 0.5rem 1.5rem;">✓ Sharing with whole club. Uncheck to select specific people instead.</p>' : ''}
       <div class="share-people-block">
         <p class="drawer-label">People</p>
         <div id="sharePeopleList" class="share-people-list">${peopleHtml}</div>
@@ -2021,9 +2084,28 @@ function setShareModalStatus(message, isError) {
   shareModalStatus.style.color = isError ? "#ff9e9e" : "#cfe7ff";
 }
 
+// B2: Pre-load members for active club to avoid modal lag
+async function preloadActiveClubMembers() {
+  if (!activeClubId || !supabase || !currentUser) return;
+  // Load in background without blocking
+  loadClubMembers(activeClubId).catch(() => {
+    // Silently fail - members will load on demand
+  });
+}
+
 async function loadClubMembers(clubId) {
   if (!supabase || !currentUser || !clubId) {
     clubMembers = [];
+    return;
+  }
+
+  // B2: Check cache first (5 minute TTL)
+  const cacheKey = clubId;
+  const now = Date.now();
+  const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+
+  if (clubMembersCache[cacheKey] && clubMembersCacheTime[cacheKey] && (now - clubMembersCacheTime[cacheKey]) < cacheExpiry) {
+    clubMembers = clubMembersCache[cacheKey];
     return;
   }
 
@@ -2047,6 +2129,10 @@ async function loadClubMembers(clubId) {
     }))
     .filter((member) => member.id && member.id !== currentUser.id)
     .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+  // B2: Store in cache
+  clubMembersCache[cacheKey] = clubMembers;
+  clubMembersCacheTime[cacheKey] = now;
 }
 
 async function loadShareSettings(debriefId) {
@@ -2127,6 +2213,10 @@ async function saveShareSettingsFromModal() {
 
 async function stopSharingFromModal() {
   if (!activeShareEntry) return;
+  // B1: Add confirmation before making private (destructive action)
+  if (!window.confirm("Make this debrief private? It will no longer be shared with the club or selected people.")) {
+    return;
+  }
   await writeShareSettings(activeShareEntry, {
     shareWholeClub: false,
     recipientIds: [],
@@ -2217,7 +2307,19 @@ async function writeShareSettings(entry, { shareWholeClub, recipientIds, useModa
 
   activeShareWholeClub = shareWholeClub;
   activeShareRecipientIds = new Set(recipientIds);
-  const successMessage = shareRows.length > 0 ? "Sharing updated!" : "This debrief is now private.";
+  // C3: Show detailed sharing confirmation
+  let successMessage = "";
+  if (shareRows.length === 0) {
+    successMessage = "✓ Made private.";
+  } else if (shareWholeClub && recipientIds.length === 0) {
+    const clubName = clubContext.clubs.find((c) => c.id === entry.club_id)?.name || "the club";
+    successMessage = `✓ Shared with ${clubName} (visible to all members).`;
+  } else if (recipientIds.length > 0 && !shareWholeClub) {
+    successMessage = `✓ Shared with ${recipientIds.length} person${recipientIds.length === 1 ? "" : "s"}.`;
+  } else if (shareWholeClub && recipientIds.length > 0) {
+    const clubName = clubContext.clubs.find((c) => c.id === entry.club_id)?.name || "the club";
+    successMessage = `✓ Shared with ${clubName} and ${recipientIds.length} person${recipientIds.length === 1 ? "" : "s"}.`;
+  }
   setStatus(successMessage, false);
 
   if (useModal) {
@@ -2693,10 +2795,10 @@ function formatFriendlyDate(value) {
 
 function escapeHtml(value) {
   var text = String(value ?? "");
-  text = text.split("&").join("&");
-  text = text.split("<").join("<");
-  text = text.split(">").join(">");
-  text = text.split('"').join(""");
+  text = text.split("&").join("&amp;");
+  text = text.split("<").join("&lt;");
+  text = text.split(">").join("&gt;");
+  text = text.split('"').join("&quot;");
   text = text.split("'").join("&#039;");
   return text;
 }

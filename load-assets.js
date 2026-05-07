@@ -3,7 +3,7 @@
 (async () => {
   try {
     const manifest = await fetch('/deploy-manifest.json').then(r => r.json());
-    const { css, js, fallback } = manifest.assets;
+    const { css, js, fallback, touchFeedback } = manifest.assets;
 
     // Inject CSS
     if (css) {
@@ -27,6 +27,13 @@
       scriptMain.src = js;
       document.body.appendChild(scriptMain);
     }
+
+    // Inject touch feedback enhancement (runs after main JS loads)
+    if (touchFeedback) {
+      const scriptTouch = document.createElement('script');
+      scriptTouch.src = touchFeedback;
+      document.body.appendChild(scriptTouch);
+    }
   } catch (error) {
     console.error('Failed to load asset manifest:', error);
     // Fallback: if manifest fails, try to load with .20260430g suffix (current version)
@@ -37,12 +44,16 @@
     document.head.appendChild(linkCSS);
 
     const scriptFallback = document.createElement('script');
-    scriptFallback.src = 'login-fallback.20260430g.js';
+    scriptFallback.src = 'login-fallback.92d54de8.js';
     document.body.appendChild(scriptFallback);
 
     const scriptMain = document.createElement('script');
     scriptMain.type = 'module';
-    scriptMain.src = 'debrief-viewer.20260430g.js';
+    scriptMain.src = 'debrief-viewer.36c808a4.js';
     document.body.appendChild(scriptMain);
+
+    const scriptTouch = document.createElement('script');
+    scriptTouch.src = 'debrief-touch-feedback.20260430g.js';
+    document.body.appendChild(scriptTouch);
   }
 })();
