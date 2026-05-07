@@ -233,6 +233,11 @@
             </label>
             <button id="createClubButton" class="ghost" type="button">Create Club</button>
           </div>
+          <div class="free-user-notice hidden" id="freeUserClubNotice">
+            <p class="eyebrow compact">Plan Limitation</p>
+            <h3>Sharing requires Pro</h3>
+            <p class="muted">Your account is on the Free plan. Club sharing is a Pro feature. <a href="/account?tab=billing" style="color: #ffca76; text-decoration: underline;">Upgrade now</a> to share debriefs with club members.</p>
+          </div>
           <p id="clubPanelStatus" class="muted"></p>
         </details>
 
@@ -295,6 +300,7 @@
               <span>Timeline</span>
               <span id="listCountBadge" class="count-badge">0</span>
             </div>
+            <p id="filterStateReminder" class="muted" style="font-size: 0.85rem; margin: 0.5rem 0; display: none;"></p>
             <div id="paginationControls" class="pagination-row hidden" aria-label="Timeline pages"></div>
           </div>
           <div id="entryList" class="entry-list"></div>

@@ -27,6 +27,9 @@ let favouriteIds = new Set();
 let clubMembers = [];
 let clubContext = { active_club_id: null, clubs: [] };
 let adminMemberLists = {};
+// B2: Cache for club members (pre-loaded on login)
+let clubMembersCache = {};
+let clubMembersCacheTime = {};
 let activeClubId = null;
 let activeShareEntry = null;
 let activeShareRecipientIds = new Set();
@@ -80,6 +83,7 @@ const exportStatus = document.querySelector("#exportStatus");
 const entryList = document.querySelector("#entryList");
 const entryDetail = document.querySelector("#entryDetail");
 const listCountBadge = document.querySelector("#listCountBadge");
+const filterStateReminder = document.querySelector("#filterStateReminder");
 
 const viewMineButton = document.querySelector("#viewMineButton");
 const viewSharedButton = document.querySelector("#viewSharedButton");
@@ -130,6 +134,7 @@ const joinClubButton = document.querySelector("#joinClubButton");
 const newClubNameInput = document.querySelector("#newClubName");
 const createClubButton = document.querySelector("#createClubButton");
 const clubPanelStatus = document.querySelector("#clubPanelStatus");
+const freeUserClubNotice = document.querySelector("#freeUserClubNotice");
 
 boot();
 
@@ -374,6 +379,7 @@ function applyQuickRange(range, { load = true } = {}) {
   }
 
   renderQuickRange();
+  updateFilterStateReminder(); // B5: Show active filter state
   if (load) loadEntries({ reset: true });
 }
 
@@ -381,6 +387,35 @@ function renderQuickRange() {
   quickFilterButtons.forEach((button) => {
     button.classList.toggle("active-tab", (button.dataset.range || "all") === quickRange);
   });
+}
+
+// B5: Update filter state reminder
+function updateFilterStateReminder() {
+  if (!filterStateReminder) return;
+
+  const dateFrom = document.querySelector("#dateFrom")?.value || "";
+  const dateTo = document.querySelector("#dateTo")?.value || "";
+  const domainFilter = (document.querySelector("#domainFilter")?.value || "").trim();
+
+  const filters = [];
+  if (domainFilter) filters.push(`domain: ${domainFilter}`);
+  if (dateFrom && dateTo) filters.push(`${dateFrom} to ${dateTo}`);
+  else if (dateFrom) filters.push(`from ${dateFrom}`);
+  else if (dateTo) filters.push(`to ${dateTo}`);
+
+  if (filters.length === 0) {
+    filterStateReminder.style.display = "none";
+    filterStateReminder.innerHTML = "";
+    return;
+  }
+
+  filterStateReminder.style.display = "block";
+  filterStateReminder.innerHTML = `
+    Filtered by ${filters.join(" | ")}
+    <button class="ghost" type="button" id="clearFiltersBtn" style="margin-left: 0.5rem; font-size: 0.85rem;">Clear</button>
+  `;
+  const clearBtn = document.querySelector("#clearFiltersBtn");
+  if (clearBtn) clearBtn.addEventListener("click", handleClearSearch);
 }
 
 function getStartOfWeek(date) {
@@ -796,6 +831,7 @@ async function handleSignedInSession() {
     }
 
     await loadClubContext();
+    preloadActiveClubMembers(); // B2: Pre-load members to avoid modal lag (fire & forget)
     await loadPlanStatus();
   renderWhatsNewNotice();
   renderViewState();
@@ -1394,6 +1430,20 @@ function renderPlanGates() {
   if (sharedOptInStatus && !canShareOrViewClubFeed()) {
     sharedOptInStatus.textContent = "Club sharing is available on paid plans.";
     sharedOptInStatus.style.color = "#cfe7ff";
+  }
+  checkUserPlanForSharing();
+}
+
+// B6: Check user plan and disable sharing for free users
+function checkUserPlanForSharing() {
+  const isFree = isFreePlan();
+  if (freeUserClubNotice) {
+    freeUserClubNotice.classList.toggle("hidden", !isFree);
+  }
+  if (saveShareSettingsButton) {
+    saveShareSettingsButton.disabled = isFree;
+    saveShareSettingsButton.title = isFree ? "Pro feature: Upgrade to share" : "Save sharing settings";
+    saveShareSettingsButton.classList.toggle("disabled", isFree);
   }
 }
 
@@ -2034,9 +2084,28 @@ function setShareModalStatus(message, isError) {
   shareModalStatus.style.color = isError ? "#ff9e9e" : "#cfe7ff";
 }
 
+// B2: Pre-load members for active club to avoid modal lag
+async function preloadActiveClubMembers() {
+  if (!activeClubId || !supabase || !currentUser) return;
+  // Load in background without blocking
+  loadClubMembers(activeClubId).catch(() => {
+    // Silently fail - members will load on demand
+  });
+}
+
 async function loadClubMembers(clubId) {
   if (!supabase || !currentUser || !clubId) {
     clubMembers = [];
+    return;
+  }
+
+  // B2: Check cache first (5 minute TTL)
+  const cacheKey = clubId;
+  const now = Date.now();
+  const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+
+  if (clubMembersCache[cacheKey] && clubMembersCacheTime[cacheKey] && (now - clubMembersCacheTime[cacheKey]) < cacheExpiry) {
+    clubMembers = clubMembersCache[cacheKey];
     return;
   }
 
@@ -2060,6 +2129,10 @@ async function loadClubMembers(clubId) {
     }))
     .filter((member) => member.id && member.id !== currentUser.id)
     .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+  // B2: Store in cache
+  clubMembersCache[cacheKey] = clubMembers;
+  clubMembersCacheTime[cacheKey] = now;
 }
 
 async function loadShareSettings(debriefId) {

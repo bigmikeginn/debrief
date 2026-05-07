@@ -1024,6 +1024,44 @@ button:disabled:hover {
  min-height: 3rem;
 }
 
+/* B6: Free User Club Notice */
+
+.free-user-notice {
+ padding: 0.85rem;
+ border-left: 3px solid #ffca76;
+ background: rgba(255, 202, 118, 0.08);
+ border-radius: 0.5rem;
+ margin: 0.85rem 0;
+}
+
+.free-user-notice.hidden {
+ display: none;
+}
+
+.free-user-notice p {
+ margin: 0.35rem 0;
+}
+
+.free-user-notice h3 {
+ margin: 0.35rem 0;
+ font-size: 0.95rem;
+ color: #ffca76;
+}
+
+.free-user-notice a {
+ color: #ffca76;
+ text-decoration: underline;
+}
+
+.free-user-notice a:hover {
+ opacity: 0.8;
+}
+
+button.disabled {
+ opacity: 0.5 !important;
+ cursor: not-allowed;
+}
+
 /* DRAWER & MODAL */
 
 .drawer-scrim {
