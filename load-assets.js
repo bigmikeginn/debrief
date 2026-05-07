@@ -40,7 +40,7 @@
     // This allows graceful degradation if deploy-manifest.json is not yet deployed
     const linkCSS = document.createElement('link');
     linkCSS.rel = 'stylesheet';
-    linkCSS.href = 'debrief-viewer.20260430g.css';
+    linkCSS.href = 'debrief-viewer.0b9a3a06.css';
     document.head.appendChild(linkCSS);
 
     const scriptFallback = document.createElement('script');
@@ -49,11 +49,11 @@
 
     const scriptMain = document.createElement('script');
     scriptMain.type = 'module';
-    scriptMain.src = 'debrief-viewer.36c808a4.js';
+    scriptMain.src = 'debrief-viewer.eaae7f54.js';
     document.body.appendChild(scriptMain);
 
     const scriptTouch = document.createElement('script');
-    scriptTouch.src = 'debrief-touch-feedback.20260430g.js';
+    scriptTouch.src = 'debrief-touch-feedback.a700bae0.js';
     document.body.appendChild(scriptTouch);
   }
 })();
