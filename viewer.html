@@ -92,11 +92,11 @@
         <div>
           <p class="eyebrow compact">Archive</p>
           <h2>Debrief History</h2>
-          <p id="clubContextLabel" class="muted club-context-label">Loading club...</p>
+          <p id="clubContextLabel" class="muted club-context-label">Club: <span id="activeClubDisplay">Loading...</span></p>
         </div>
         <div class="button-row toolbar-actions">
           <button id="newDebriefButton" class="action" type="button">New Debrief</button>
-          <button id="menuButton" class="ghost" type="button" aria-expanded="false">Controls</button>
+          <button id="menuButton" class="ghost" type="button" aria-expanded="false" title="Search, filter, views, sharing, export">Search & Filter</button>
         </div>
       </div>
       <section id="quotaNotice" class="quota-notice hidden" aria-live="polite"></section>
@@ -300,7 +300,10 @@
           <div id="entryList" class="entry-list"></div>
         </aside>
         <article id="entryDetail" class="detail-panel">
-          <p class="muted">Select a debrief to view details.</p>
+          <div id="emptyStateContainer" style="padding: 2rem; text-align: center;">
+            <p class="muted" id="emptyStateMessage">Select a debrief to view details.</p>
+            <button id="emptyStateActionButton" class="ghost" type="button" style="margin-top: 1rem; display: none;">Create Debrief</button>
+          </div>
         </article>
       </div>
 

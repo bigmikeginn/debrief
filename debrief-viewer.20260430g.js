@@ -496,6 +496,12 @@ function renderClubContext() {
       : "No club selected yet.";
   }
 
+  // Also update activeClubDisplay span if it exists (A5: Club context clarity)
+  const activeClubDisplay = document.querySelector("#activeClubDisplay");
+  if (activeClubDisplay) {
+    activeClubDisplay.textContent = activeClub ? activeClub.name : "None selected";
+  }
+
   if (activeClubSelect) {
     if (clubs.length === 0) {
       activeClubSelect.innerHTML = '<option value="">No clubs yet</option>';
@@ -613,6 +619,12 @@ async function handleActiveClubChange() {
     return;
   }
   applyClubContext(data);
+  // B4: Show toast confirmation of club change
+  const clubs = data?.clubs || [];
+  const newClub = clubs.find((c) => c.id === clubId);
+  if (newClub) {
+    showToast(`Active club is now ${newClub.name}.`, "info", 2000);
+  }
   await loadPlanStatus();
   renderPlanGates();
   renderQuotaNotice();
@@ -1965,6 +1977,7 @@ async function openSharePanel(entry) {
         <input id="shareWholeClub" type="checkbox" ${wcChecked}>
         <span><strong>Whole club</strong><small>Appears in the club feed for members who enable it.</small></span>
       </label>
+      ${activeShareWholeClub ? '<p class="muted" style="font-size:0.85rem; margin:-0.5rem 0 0.5rem 1.5rem;">✓ Sharing with whole club. Uncheck to select specific people instead.</p>' : ''}
       <div class="share-people-block">
         <p class="drawer-label">People</p>
         <div id="sharePeopleList" class="share-people-list">${peopleHtml}</div>
@@ -2127,6 +2140,10 @@ async function saveShareSettingsFromModal() {
 
 async function stopSharingFromModal() {
   if (!activeShareEntry) return;
+  // B1: Add confirmation before making private (destructive action)
+  if (!window.confirm("Make this debrief private? It will no longer be shared with the club or selected people.")) {
+    return;
+  }
   await writeShareSettings(activeShareEntry, {
     shareWholeClub: false,
     recipientIds: [],
@@ -2217,7 +2234,19 @@ async function writeShareSettings(entry, { shareWholeClub, recipientIds, useModa
 
   activeShareWholeClub = shareWholeClub;
   activeShareRecipientIds = new Set(recipientIds);
-  const successMessage = shareRows.length > 0 ? "Sharing updated!" : "This debrief is now private.";
+  // C3: Show detailed sharing confirmation
+  let successMessage = "";
+  if (shareRows.length === 0) {
+    successMessage = "✓ Made private.";
+  } else if (shareWholeClub && recipientIds.length === 0) {
+    const clubName = clubContext.clubs.find((c) => c.id === entry.club_id)?.name || "the club";
+    successMessage = `✓ Shared with ${clubName} (visible to all members).`;
+  } else if (recipientIds.length > 0 && !shareWholeClub) {
+    successMessage = `✓ Shared with ${recipientIds.length} person${recipientIds.length === 1 ? "" : "s"}.`;
+  } else if (shareWholeClub && recipientIds.length > 0) {
+    const clubName = clubContext.clubs.find((c) => c.id === entry.club_id)?.name || "the club";
+    successMessage = `✓ Shared with ${clubName} and ${recipientIds.length} person${recipientIds.length === 1 ? "" : "s"}.`;
+  }
   setStatus(successMessage, false);
 
   if (useModal) {
@@ -2693,10 +2722,10 @@ function formatFriendlyDate(value) {
 
 function escapeHtml(value) {
   var text = String(value ?? "");
-  text = text.split("&").join("&");
-  text = text.split("<").join("<");
-  text = text.split(">").join(">");
-  text = text.split('"').join(""");
+  text = text.split("&").join("&amp;");
+  text = text.split("<").join("&lt;");
+  text = text.split(">").join("&gt;");
+  text = text.split('"').join("&quot;");
   text = text.split("'").join("&#039;");
   return text;
 }
