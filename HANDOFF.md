@@ -95,6 +95,8 @@ Treat this as test copy, not final business commitment.
 - `setup-wizard.html`: simplified beta setup helper.
 - `setup-wizard.css`: setup wizard styling.
 - `app.js`: legacy setup wizard logic, partially simplified.
+- `debrief-chat-widget.js`: signed-in viewer help widget.
+- `api/chat.js`: Debrief support chat endpoint with same-origin access control.
 - `PROJECT_NOTES.md`: running wisdom/history.
 - `vercel.json`: clean URL rewrites.
 

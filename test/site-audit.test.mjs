@@ -67,3 +67,24 @@ test('Vercel config adds security headers and route-specific noindex caching', (
   assert.match(vercel, /source": "\/setup"/);
   assert.match(vercel, /source": "\/viewer"/);
 });
+
+test('Debrief chatbot is wired to the signed-in viewer and hardened for same-origin use', () => {
+  const chatApi = read('api/chat.js');
+  const widget = read('debrief-chat-widget.js');
+  const viewer = read('viewer.html');
+
+  assert.match(chatApi, /const ALLOWED_ORIGINS = new Set\(/);
+  assert.match(chatApi, /https:\/\/debrief-training\.vercel\.app/);
+  assert.match(chatApi, /http:\/\/localhost:4173/);
+  assert.match(chatApi, /The chatbot lives in the signed-in viewer/);
+  assert.match(chatApi, /Where is the chatbot\?/);
+  assert.doesNotMatch(chatApi, /Access-Control-Allow-Origin", "\*"/);
+
+  assert.match(widget, /MutationObserver/);
+  assert.match(widget, /appCard/);
+  assert.match(widget, /debrief-chat-root/);
+  assert.match(widget, /\?\<\/button\>/);
+
+  assert.match(viewer, /window\.__debriefViewerReady = true;/);
+  assert.match(viewer, /debrief-chat-widget\.js/);
+});

@@ -2,11 +2,33 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000;
 const CACHE_TTL = 60 * 60 * 1000;
+const ALLOWED_ORIGINS = new Set([
+  "https://debrief-training.vercel.app",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+]);
 const rateLimitMap = new Map();
 function getIp(req) {
   return (req.headers["x-forwarded-for"] || "").split(",")[0].trim()
     || req.socket?.remoteAddress
     || "unknown";
+}
+
+function getRequestOrigin(req) {
+  return req.headers.origin || "";
+}
+
+function isAllowedOrigin(origin) {
+  return Boolean(origin && ALLOWED_ORIGINS.has(origin));
+}
+
+function applyCorsHeaders(res, origin) {
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
 function isRateLimited(ip) {
@@ -30,9 +52,12 @@ function isRateLimited(ip) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  const origin = getRequestOrigin(req);
+  if (!isAllowedOrigin(origin)) {
+    return res.status(403).json({ error: "Origin not allowed" });
+  }
+
+  applyCorsHeaders(res, origin);
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -86,6 +111,8 @@ Important setup details:
 - Notes are private unless the user chooses to share them on a paid plan.
 - New users get a 14-day full-access trial. After the trial, Free accounts get 8 debrief submissions per month and do not include sharing or CSV export.
 - Club invite codes should be used to join an existing club. Users should not create a duplicate club unless they are setting up their own club.
+- The chatbot lives in the signed-in viewer. If someone asks where to find it, tell them to log in and use the help button in the bottom-right corner.
+- If a user wants the fastest path to success, tell them to log in, connect Telegram, send one #debrief note, and refresh the viewer.
 
 === LINKS ===
 - Homepage: https://debrief-training.vercel.app/
@@ -196,6 +223,9 @@ During beta, the signup flow starts with the free trial path. Paid checkout will
 
 How do I choose a paid plan during signup?
 During beta, choose the free trial path to create your account. Pro and Club are shown so you can see what is coming, but checkout will be handled through Stripe when it is connected.
+
+Where is the chatbot?
+It is available in the signed-in viewer. Log in first, then use the help button in the bottom-right corner.
 
 Will this make me better at training?
 It helps you keep track of what is happening so you can get more out of your training over time.

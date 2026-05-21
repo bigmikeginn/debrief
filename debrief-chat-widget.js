@@ -1,18 +1,34 @@
 (function () {
   "use strict";
 
-  function init() {
-    if (document.getElementById("debrief-chat-root")) return;
+  var booted = false;
+  var viewerObserver = null;
+
+  function isViewerReady() {
+    var appCard = document.getElementById("appCard");
+    return Boolean(appCard && !appCard.classList.contains("hidden"));
+  }
+
+  function stopObserver() {
+    if (viewerObserver) {
+      viewerObserver.disconnect();
+      viewerObserver = null;
+    }
+  }
+
+  function bootWidget() {
+    if (booted || document.getElementById("debrief-chat-root")) return;
+    booted = true;
 
     var root = document.createElement("div");
     root.id = "debrief-chat-root";
     document.body.appendChild(root);
 
     var API_URL = "/api/chat";
-    var WELCOME = "Hi, I'm the Debrief assistant. I can help you understand the app, set up Telegram, or send your first training note. What would you like help with?";
+    var WELCOME = "Hi, I'm the Debrief assistant. I can help you understand the app, connect Telegram, or send your first training note. What would you like help with?";
     var QUICK_REPLIES = [
       { label: "How does it work?", text: "How does Debrief work?" },
-      { label: "Set up Telegram", text: "Walk me through connecting Telegram." },
+      { label: "Connect Telegram", text: "Walk me through connecting Telegram." },
       { label: "First note", text: "How do I send my first debrief note?" },
       { label: "Pricing", text: "How much does Debrief cost?" },
       { label: "Missing notes", text: "My Telegram notes are not showing up." },
@@ -46,7 +62,7 @@
     document.head.appendChild(style);
 
     root.innerHTML =
-      '<button id="dchat-btn" aria-label="Chat with Debrief">D</button>' +
+      '<button id="dchat-btn" aria-label="Open Debrief help">?</button>' +
       '<div id="dchat-window" role="dialog" aria-label="Debrief Chat Assistant">' +
       '<div id="dchat-header"><div id="dchat-avatar">D</div><div id="dchat-title"><h3>Debrief Assistant</h3><p>Setup and first-note help</p></div><button id="dchat-x" aria-label="Close">x</button></div>' +
       '<div id="dchat-msgs"></div>' +
@@ -133,7 +149,7 @@
     function toggle() {
       open = !open;
       win.classList.toggle("dopen", open);
-      btn.textContent = open ? "x" : "D";
+      btn.textContent = open ? "×" : "?";
       if (open && msgs.childElementCount === 0) {
         addBot(WELCOME);
         addQuickReplies();
@@ -188,6 +204,31 @@
         event.preventDefault();
         send();
       }
+    });
+  }
+
+  function init() {
+    if (booted || document.getElementById("debrief-chat-root")) return;
+    if (!window.__debriefViewerReady) return;
+    if (isViewerReady()) {
+      stopObserver();
+      bootWidget();
+      return;
+    }
+
+    var appCard = document.getElementById("appCard");
+    if (!appCard || viewerObserver) return;
+
+    viewerObserver = new MutationObserver(function () {
+      if (isViewerReady()) {
+        stopObserver();
+        bootWidget();
+      }
+    });
+
+    viewerObserver.observe(appCard, {
+      attributes: true,
+      attributeFilter: ["class"],
     });
   }
 
