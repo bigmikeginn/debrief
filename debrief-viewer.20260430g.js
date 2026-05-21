@@ -432,6 +432,124 @@ function toDateInputValue(date) {
   return local.toISOString().slice(0, 10);
 }
 
+// ============================================================
+// Phase 4C: Parse Status Polling & Feedback System
+// ============================================================
+
+// Toast notification system
+const toastContainer = document.querySelector("#toastContainer") || (() => {
+  const container = document.createElement("div");
+  container.id = "toastContainer";
+  container.className = "toast-container";
+  document.body.appendChild(container);
+  return container;
+})();
+
+function showToast(message, type = "info", duration = 3000) {
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// Parse job polling
+const parsePollers = new Map(); // Track active pollers by debrief ID
+
+function startParsePolling(debriefId) {
+  // Don't start multiple pollers for the same debrief
+  if (parsePollers.has(debriefId)) return;
+
+  const maxAttempts = 60; // Max 2 minutes of polling (60 * 2 seconds)
+  let attempts = 0;
+
+  const pollFn = async () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      parsePollers.delete(debriefId);
+      showToast("Parse job timeout - still processing", "warning");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/functions/v1/parse-job/${debriefId}`, {
+        headers: { Authorization: `Bearer ${currentAccessToken}` }
+      });
+
+      if (!response.ok) {
+        if (attempts < maxAttempts) {
+          setTimeout(pollFn, 2000);
+        }
+        return;
+      }
+
+      const jobStatus = await response.json();
+
+      // Update the displayed debrief with new parse status
+      const entry = entries.find(e => e.id === debriefId);
+      if (entry) {
+        entry.parse_status = jobStatus.parseStatus;
+        entry.parse_stage = jobStatus.stage;
+        entry.parse_confidence = jobStatus.confidence || entry.parse_confidence;
+
+        // Re-render if this is the active entry
+        if (activeEntryId === debriefId) {
+          renderEntryDetail(entry);
+        }
+
+        // Re-render in list
+        renderEntryList();
+      }
+
+      // Stop polling when done
+      if (jobStatus.parseStatus === "ready" || jobStatus.parseStatus === "needs_review") {
+        parsePollers.delete(debriefId);
+        showToast("✅ Debrief parsed successfully!", "success");
+      } else if (jobStatus.parseStatus === "failed") {
+        parsePollers.delete(debriefId);
+        showToast("❌ Parsing failed - try again", "error");
+      } else {
+        // Continue polling
+        setTimeout(pollFn, 2000);
+      }
+    } catch (error) {
+      console.error("Parse polling error:", error);
+      if (attempts < maxAttempts) {
+        setTimeout(pollFn, 2000);
+      }
+    }
+  };
+
+  parsePollers.set(debriefId, pollFn);
+  pollFn();
+}
+
+// Render enhanced parse status indicator
+function renderParseStatus(entry) {
+  const status = entry.parse_status || "unknown";
+  const stage = entry.parse_stage ?? 0;
+  const confidence = entry.parse_confidence ? `${Math.round(entry.parse_confidence * 100)}%` : "0%";
+
+  if (status === "ready") {
+    return `✅ Parsed successfully (${confidence} confidence)`;
+  }
+  if (status === "needs_review") {
+    return `⚠️ Needs review (${confidence} confidence)`;
+  }
+  if (status === "refining" || status === "queued") {
+    const estimatedSeconds = stage === 0 ? 20 : stage === 1 ? 10 : 5;
+    return `⏳ Parsing... (Est. ${estimatedSeconds}s)`;
+  }
+  if (status === "failed") {
+    return `❌ Parsing failed`;
+  }
+  return `Processing (${confidence} confidence)`;
+}
+
 async function handleRefreshFeed() {
   handleClearSearch({ load: false });
   closeMenuPanel();
@@ -1883,6 +2001,11 @@ function renderEntryDetail() {
     return;
   }
 
+  // Phase 4C: Start polling if debrief is still being parsed
+  if (entry.parse_status === "refining" || entry.parse_status === "queued") {
+    startParsePolling(entry.id);
+  }
+
   const displayKeyPoints = normalizeDisplayKeyPoints(entry.key_points, entry.raw_notes || "");
   const keyPoints = displayKeyPoints.length
     ? `<ul class="keypoint-grid">${displayKeyPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul>`
@@ -1893,9 +2016,7 @@ function renderEntryDetail() {
   const actionItems = Array.isArray(entry.action_items) && entry.action_items.length
     ? `<ul>${entry.action_items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
     : "<p>No action items.</p>";
-  const parseConfidence = typeof entry.parse_confidence === "number"
-    ? `${Math.round(entry.parse_confidence * 100)}%`
-    : "n/a";
+  const parseStatusDisplay = renderParseStatus(entry);
   const canShare = entry.author_user_id === currentUser?.id;
   const shareLabel = entry.visibility === "shared" ? "Sharing" : "Share";
   const isFavourite = favouriteIds.has(entry.id);
@@ -1961,7 +2082,7 @@ function renderEntryDetail() {
         </div>
         <div class="detail-block">
           <h3>Parse Status</h3>
-          <p>${escapeHtml(entry.parse_status || "unknown")} · stage ${escapeHtml(entry.parse_stage ?? 0)} · confidence ${escapeHtml(parseConfidence)}</p>
+          <p class="parse-status-display">${escapeHtml(parseStatusDisplay)}</p>
         </div>
       </div>
       <details class="raw-note-disclosure">
@@ -2993,6 +3114,9 @@ async function submitViaDirectInsert(userId, clubId, text) {
   } catch (_err) {
     // Fire-and-forget
   }
+
+  // Phase 4C: Start polling for parse job status updates
+  startParsePolling(debrief.id);
 
   return debrief;
 }

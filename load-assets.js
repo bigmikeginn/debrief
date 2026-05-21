@@ -36,11 +36,11 @@
     }
   } catch (error) {
     console.error('Failed to load asset manifest:', error);
-    // Fallback: if manifest fails, try to load with .20260430g suffix (current version)
-    // This allows graceful degradation if deploy-manifest.json is not yet deployed
+    // Fallback: if the manifest cannot be loaded, use the checked-in source files.
+    // This keeps the app usable even if deploy-manifest.json is stale or missing.
     const linkCSS = document.createElement('link');
     linkCSS.rel = 'stylesheet';
-    linkCSS.href = 'debrief-viewer.0b9a3a06.css';
+    linkCSS.href = 'debrief-viewer.20260430g.css';
     document.head.appendChild(linkCSS);
 
     const scriptFallback = document.createElement('script');
@@ -49,11 +49,11 @@
 
     const scriptMain = document.createElement('script');
     scriptMain.type = 'module';
-    scriptMain.src = 'debrief-viewer.eaae7f54.js';
+    scriptMain.src = 'debrief-viewer.20260430g.js';
     document.body.appendChild(scriptMain);
 
     const scriptTouch = document.createElement('script');
-    scriptTouch.src = 'debrief-touch-feedback.a700bae0.js';
+    scriptTouch.src = 'debrief-touch-feedback.20260430g.js';
     document.body.appendChild(scriptTouch);
   }
 })();

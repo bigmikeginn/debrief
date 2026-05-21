@@ -90,8 +90,8 @@ Treat this as test copy, not final business commitment.
 - `styles.css`: landing page visual system and animations.
 - `landing.js`: landing page scroll reveal behavior.
 - `debrief-viewer.html`: login/app viewer.
-- `debrief-viewer.20260430c.css`: active viewer styling.
-- `debrief-viewer.20260430c.js`: active Supabase viewer logic.
+- `debrief-viewer.20260430g.css`: active viewer styling.
+- `debrief-viewer.20260430g.js`: active Supabase viewer logic.
 - `setup-wizard.html`: simplified beta setup helper.
 - `setup-wizard.css`: setup wizard styling.
 - `app.js`: legacy setup wizard logic, partially simplified.
