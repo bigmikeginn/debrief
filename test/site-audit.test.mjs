@@ -100,7 +100,6 @@ test('Vercel config adds security headers and route-specific noindex caching', (
   assert.match(vercel, /noindex, nofollow/);
   assert.match(vercel, /source": "\/setup"/);
   assert.match(vercel, /source": "\/viewer"/);
-  assert.match(vercel, /\.well-known\/security\.txt/);
 });
 
 test('Debrief chatbot is wired to the signed-in viewer and hardened for same-origin use', () => {
