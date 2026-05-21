@@ -40,6 +40,8 @@ test('public SEO files exist for crawlability and discovery', () => {
   assert.equal(existsSync(join(root, 'setup.html')), true);
   assert.equal(existsSync(join(root, 'viewer-shell.js')), true);
   assert.equal(existsSync(join(root, 'login-fresh.js')), true);
+  assert.equal(existsSync(join(root, 'security.txt')), true);
+  assert.equal(existsSync(join(root, 'site.webmanifest')), true);
 });
 
 test('robots policy and sitemap point at the public Debrief site', () => {
@@ -59,6 +61,10 @@ test('public landing page has canonical SEO metadata', () => {
   assert.match(index, /meta name="description"/);
   assert.match(index, /meta name="robots" content="index,follow"/);
   assert.match(index, /link rel="canonical" href="https:\/\/debrief-training\.vercel\.app\/"/);
+  assert.match(index, /meta property="og:site_name" content="Debrief"/);
+  assert.match(index, /meta property="og:url" content="https:\/\/debrief-training\.vercel\.app\/"/);
+  assert.match(index, /meta name="twitter:card" content="summary_large_image"/);
+  assert.match(index, /link rel="manifest" href="\/site.webmanifest"/);
 });
 
 test('auth and app surfaces are marked noindex', () => {
@@ -88,10 +94,12 @@ test('Vercel config adds security headers and route-specific noindex caching', (
   assert.match(vercel, /Content-Security-Policy/);
   assert.match(vercel, /Cross-Origin-Opener-Policy/);
   assert.match(vercel, /Permissions-Policy/);
+  assert.match(vercel, /X-XSS-Protection/);
   assert.match(vercel, /X-Robots-Tag/);
   assert.match(vercel, /noindex, nofollow/);
   assert.match(vercel, /source": "\/setup"/);
   assert.match(vercel, /source": "\/viewer"/);
+  assert.match(vercel, /\.well-known\/security\.txt/);
 });
 
 test('Debrief chatbot is wired to the signed-in viewer and hardened for same-origin use', () => {

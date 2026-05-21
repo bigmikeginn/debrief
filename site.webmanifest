@@ -1,0 +1,15 @@
+{
+  "name": "Debrief",
+  "short_name": "Debrief",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#11131a",
+  "theme_color": "#11131a",
+  "icons": [
+    {
+      "src": "/debrief-mark-gold.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
