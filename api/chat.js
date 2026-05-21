@@ -31,6 +31,61 @@ function applyCorsHeaders(res, origin) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
+const FALLBACK_ANSWERS = [
+  {
+    patterns: [/what is debrief/i, /what does debrief do/i, /what problem does this solve/i],
+    reply: "Debrief helps you turn quick post-training notes into a structured, searchable archive so you can remember what you learned.",
+  },
+  {
+    patterns: [/how do i use it/i, /how do i get started/i, /simplest way to try/i, /first note/i],
+    reply: "The fastest path is: log in, connect Telegram, send one #debrief note after class, then refresh the viewer.",
+  },
+  {
+    patterns: [/connect telegram/i, /telegram setup/i, /link telegram/i, /save_to/i],
+    reply: "Log in, open the viewer, and use the help button in the bottom-right corner for the Telegram connection steps. If you linked the wrong email, sign into the right Debrief account and send that page's /save_to command from Telegram.",
+  },
+  {
+    patterns: [/missing notes/i, /notes are not showing/i, /where are my notes/i, /status/i],
+    reply: "If notes are missing, send /status to the Debrief bot, confirm the destination email, make sure the note started with #debrief, and refresh the feed.",
+  },
+  {
+    patterns: [/how much/i, /pricing/i, /free plan/i, /pro/i, /club/i, /trial/i],
+    reply: "New users get 14 days of full access first. After that, Free includes 8 debrief submissions per month, while sharing and CSV export stay locked unless you upgrade.",
+  },
+  {
+    patterns: [/private/i, /share/i, /privacy/i, /who sees my notes/i],
+    reply: "Your notes are private by default. Nothing is shared unless you choose to share it on a paid plan.",
+  },
+  {
+    patterns: [/who is this for/i, /is this only for martial arts/i, /bjj/i, /striking/i, /wrestling/i, /grappling/i],
+    reply: "Debrief is built for martial artists, especially striking, wrestling, and grappling, but it works for any training where reflection matters.",
+  },
+  {
+    patterns: [/where is the chatbot/i, /find the chatbot/i, /help button/i],
+    reply: "It lives in the signed-in viewer. Log in first, then use the help button in the bottom-right corner.",
+  },
+];
+
+function getLastUserMessage(messages) {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message?.role === "user" && typeof message.content === "string") {
+      return message.content;
+    }
+  }
+  return "";
+}
+
+function getFallbackReply(text) {
+  for (const entry of FALLBACK_ANSWERS) {
+    if (entry.patterns.some((pattern) => pattern.test(text))) {
+      return entry.reply;
+    }
+  }
+
+  return "I can help with setup, Telegram, pricing, privacy, or your first note. Try asking one of those directly.";
+}
+
 function isRateLimited(ip) {
   const now = Date.now();
 
@@ -80,13 +135,14 @@ module.exports = async function handler(req, res) {
   }
 
   if (messages.length > 20) messages = messages.slice(-20);
+  const lastUserMessage = getLastUserMessage(messages);
 
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
-      console.error("ANTHROPIC_API_KEY not set");
-      return res.status(500).json({ error: "API key not configured" });
+      console.warn("ANTHROPIC_API_KEY not set, using Debrief FAQ fallback");
+      return res.status(200).json({ reply: getFallbackReply(lastUserMessage) });
     }
 
     const system = `You are the Debrief assistant for https://debrief-training.vercel.app.
@@ -314,7 +370,7 @@ You do not have to think about limits. You just log and move on.`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Claude API error:", response.status, errorText);
-      return res.status(500).json({ error: "Something went wrong. Please try again." });
+      return res.status(200).json({ reply: getFallbackReply(lastUserMessage) });
     }
 
     const data = await response.json();
@@ -322,6 +378,6 @@ You do not have to think about limits. You just log and move on.`;
     return res.status(200).json({ reply });
   } catch (error) {
     console.error("Chat error:", error);
-    return res.status(500).json({ error: "Something went wrong. Please try again." });
+    return res.status(200).json({ reply: getFallbackReply(lastUserMessage) });
   }
 };

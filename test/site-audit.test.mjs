@@ -6,6 +6,32 @@ import { test } from 'node:test';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (...parts) => readFileSync(join(root, ...parts), 'utf8');
+const chatHandlerModule = await import(new URL('../api/chat.js', import.meta.url));
+const chatHandler = chatHandlerModule.default ?? chatHandlerModule;
+
+function makeMockRes() {
+  return {
+    statusCode: 200,
+    headers: {},
+    body: undefined,
+    ended: false,
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload) {
+      this.body = payload;
+      return this;
+    },
+    end() {
+      this.ended = true;
+      return this;
+    },
+  };
+}
 
 test('public SEO files exist for crawlability and discovery', () => {
   assert.equal(existsSync(join(root, 'robots.txt')), true);
@@ -87,4 +113,28 @@ test('Debrief chatbot is wired to the signed-in viewer and hardened for same-ori
 
   assert.match(viewer, /window\.__debriefViewerReady = true;/);
   assert.match(viewer, /debrief-chat-widget\.js/);
+});
+
+test('Debrief chatbot falls back to the FAQ answer bank when Anthropic is unavailable', async () => {
+  const previousKey = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+
+  const req = {
+    method: 'POST',
+    headers: { origin: 'https://debrief-training.vercel.app' },
+    body: { messages: [{ role: 'user', content: 'How do I connect Telegram?' }] },
+    socket: { remoteAddress: '127.0.0.1' },
+  };
+  const res = makeMockRes();
+
+  await chatHandler(req, res);
+
+  if (previousKey === undefined) {
+    delete process.env.ANTHROPIC_API_KEY;
+  } else {
+    process.env.ANTHROPIC_API_KEY = previousKey;
+  }
+
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body.reply, /Telegram/i);
 });
