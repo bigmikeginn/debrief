@@ -4,10 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Log In | Debrief</title>
+  <meta name="description" content="Debrief viewer for signing in, reviewing notes, and managing your martial arts training archive.">
+  <meta name="robots" content="noindex,nofollow">
   <link rel="icon" type="image/png" href="debrief-mark-gold.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    .topbar-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .analytics-link {
+      display: none;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .compact-hint {
+      margin-top: 0.5rem;
+    }
+  </style>
 </head>
 <body>
   <div class="shell">
@@ -23,8 +43,8 @@
       </div>
       <div id="topSession" class="top-session hidden">
         <p id="topSessionEmail" class="muted"></p>
-        <div style="display: flex; gap: 0.5rem;">
-          <a id="analyticsLink" href="/analytics" class="ghost" style="text-decoration: none; display: none; padding: 0.5rem 1rem; font-size: 0.9rem;">📊 Analytics</a>
+        <div class="topbar-actions">
+          <a id="analyticsLink" href="/analytics" class="ghost analytics-link">📊 Analytics</a>
           <button id="topLogoutButton" class="ghost" type="button">Log Out</button>
         </div>
       </div>
@@ -33,7 +53,7 @@
     <section id="accountCard" class="card">
       <h2 id="accountCardTitle">Log In</h2>
       <p id="runtimeHint" class="status"></p>
-      <form id="authForm" class="grid auth-grid" onsubmit="return false">
+      <form id="authForm" class="grid auth-grid">
         <label>
           Email
           <input id="email" type="email" placeholder="you@example.com" autocomplete="username" required>
@@ -283,7 +303,7 @@
               What did you train today?
               <textarea id="newDebriefText" rows="5" placeholder="e.g. Today we drilled guard retention. I need to frame earlier and keep my knees tighter."></textarea>
             </label>
-            <p class="muted" style="margin-top:0.5rem">Keep it simple. One or two sentences is enough. Your note will be analyzed and added to your timeline.</p>
+            <p class="muted compact-hint">Keep it simple. One or two sentences is enough. Your note will be analyzed and added to your timeline.</p>
           </div>
           <div class="modal-actions">
             <button id="submitDebriefButton" class="action" type="button">Save Debrief</button>
@@ -328,42 +348,7 @@
     </div>
   </div>
 
-  <script>
-    // Show analytics link only for owner
-    const OWNER_USER_ID = localStorage.getItem('owner_id') || null;
-
-    // Listen for session updates to show/hide analytics link
-    window.addEventListener('storage', function() {
-      checkAnalyticsAccess();
-    });
-
-    // Also check immediately when topSession becomes visible
-    const topSession = document.getElementById('topSession');
-    const analyticsLink = document.getElementById('analyticsLink');
-
-    if (topSession) {
-      const observer = new MutationObserver(checkAnalyticsAccess);
-      observer.observe(topSession, { attributes: true, attributeFilter: ['class'] });
-    }
-
-    function checkAnalyticsAccess() {
-      const currentUser = localStorage.getItem('user_id') || null;
-      const ownerUser = localStorage.getItem('owner_id') || null;
-
-      if (analyticsLink && topSession && !topSession.classList.contains('hidden')) {
-        // Show analytics link if: owner_id is set AND current user matches owner
-        if (ownerUser && currentUser === ownerUser) {
-          analyticsLink.style.display = 'inline-block';
-        } else {
-          analyticsLink.style.display = 'none';
-        }
-      }
-    }
-
-    // Initial check after a short delay to allow storage to be loaded
-    setTimeout(checkAnalyticsAccess, 100);
-  </script>
-
+  <script src="viewer-shell.js"></script>
   <script src="load-assets.js"></script>
 </body>
 </html>

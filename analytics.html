@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analytics - Debrief</title>
+  <meta name="description" content="Owner analytics for Debrief usage, engagement, and parsing quality.">
+  <meta name="robots" content="noindex,nofollow">
   <style>
     * { box-sizing: border-box; }
     body {
@@ -60,6 +62,7 @@
       opacity: 0.8;
     }
     .export-btn { margin-left: auto; }
+    .top-actions { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
 
     /* PHASE 4D: ANALYTICS MOBILE OPTIMIZATIONS */
 
@@ -204,8 +207,8 @@
   <div class="controls">
     <input type="date" id="startDate">
     <input type="date" id="endDate">
-    <button onclick="loadAnalytics()">Load</button>
-    <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+    <button id="loadAnalyticsButton" type="button">Load</button>
+    <button id="exportCsvButton" class="export-btn" type="button">Export CSV</button>
   </div>
 
   <div class="sections-grid">

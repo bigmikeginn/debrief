@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /viewer
+Disallow: /login
+Disallow: /login-fresh
+Disallow: /signup
+Disallow: /analytics
+Disallow: /setup
+Disallow: /debrief-viewer.html
+Disallow: /login-fresh.html
+Sitemap: https://debrief-training.vercel.app/sitemap.xml

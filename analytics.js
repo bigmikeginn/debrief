@@ -166,5 +166,21 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
+function bindAnalyticsControls() {
+  const loadButton = document.getElementById('loadAnalyticsButton');
+  const exportButton = document.getElementById('exportCsvButton');
+
+  if (loadButton) {
+    loadButton.addEventListener('click', loadAnalytics);
+  }
+
+  if (exportButton) {
+    exportButton.addEventListener('click', exportCSV);
+  }
+}
+
 // Load on page load
-window.addEventListener('DOMContentLoaded', loadAnalytics);
+window.addEventListener('DOMContentLoaded', () => {
+  bindAnalyticsControls();
+  loadAnalytics();
+});
