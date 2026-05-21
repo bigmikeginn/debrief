@@ -82,10 +82,6 @@
       ]
     },
     {
-      "source": "/.well-known/security.txt",
-      "destination": "/security.txt"
-    },
-    {
       "source": "/login",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, max-age=0" },

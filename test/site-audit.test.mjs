@@ -41,6 +41,7 @@ test('public SEO files exist for crawlability and discovery', () => {
   assert.equal(existsSync(join(root, 'viewer-shell.js')), true);
   assert.equal(existsSync(join(root, 'login-fresh.js')), true);
   assert.equal(existsSync(join(root, 'security.txt')), true);
+  assert.equal(existsSync(join(root, '.well-known', 'security.txt')), true);
   assert.equal(existsSync(join(root, 'site.webmanifest')), true);
 });
 
