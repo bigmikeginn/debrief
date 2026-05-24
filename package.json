@@ -8,8 +8,7 @@
     "build": "echo 'Running minification and versioning...' && bash build.sh",
     "deploy": "bash deploy.sh"
   },
-  "dependencies": {},
   "devDependencies": {
-    "esbuild": "^0.21.5"
+    "esbuild": "^0.28.0"
   }
 }

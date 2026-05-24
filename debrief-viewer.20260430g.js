@@ -9,6 +9,8 @@ const QUOTA_WARNING_RATIO = 0.75;
 const TRIAL_DAYS = 14;
 const WHATS_NEW_KEY = "debrief-whats-new-20260430g-native-submit";
 const PLAN_STATUS_RPC_ENABLED = true;
+// NOTE: Client-side cosmetic override only. Real owner entitlements are enforced
+// via DB-level user_plan_entitlements row (owner-entitlement-20260430.sql).
 const OWNER_EMAILS = new Set(["bigmikeginn@gmail.com"]);
 const DEBRIEF_SUBMIT_URL = "https://wtmzcwsfetqhfrdlygyr.supabase.co/functions/v1/submit-debrief";
 
@@ -436,14 +438,8 @@ function toDateInputValue(date) {
 // Phase 4C: Parse Status Polling & Feedback System
 // ============================================================
 
-// Toast notification system
-const toastContainer = document.querySelector("#toastContainer") || (() => {
-  const container = document.createElement("div");
-  container.id = "toastContainer";
-  container.className = "toast-container";
-  document.body.appendChild(container);
-  return container;
-})();
+// Toast notification system (relies on #toastContainer in HTML)
+const toastContainer = document.querySelector("#toastContainer");
 
 function showToast(message, type = "info", duration = 3000) {
   const toast = document.createElement("div");
@@ -1359,7 +1355,7 @@ function renderViewState() {
 }
 
 function switchView(view) {
-  if ((view === "shared" || view === "sharedWithMe") && !canShareOrViewClubFeed()) {
+  if ((view === "shared" || view === "sharedWithMe") && !hasSharingAccess()) {
     setListStatus("Club sharing is available on paid plans. Free accounts keep notes private.", true);
     closeMenuPanel();
     return;
@@ -1521,7 +1517,8 @@ function canShareDebriefs() {
   return Boolean(planStatus?.can_share);
 }
 
-function canShareOrViewClubFeed() {
+function hasSharingAccess() {
+  // Trial users (14-day full access) get sharing; free users do not.
   return !isFreePlan();
 }
 
@@ -1540,12 +1537,12 @@ function renderPlanGates() {
   }
   [viewSharedButton, viewSharedWithMeButton].forEach((button) => {
     if (!button) return;
-    const locked = !canShareOrViewClubFeed();
+    const locked = !hasSharingAccess();
     button.disabled = locked;
     button.classList.toggle("muted-control", locked);
   });
-  if (sharedOptInInput) sharedOptInInput.disabled = !canShareOrViewClubFeed();
-  if (sharedOptInStatus && !canShareOrViewClubFeed()) {
+  if (sharedOptInInput) sharedOptInInput.disabled = !hasSharingAccess();
+  if (sharedOptInStatus && !hasSharingAccess()) {
     sharedOptInStatus.textContent = "Club sharing is available on paid plans.";
     sharedOptInStatus.style.color = "#cfe7ff";
   }
@@ -1669,7 +1666,7 @@ async function loadFavouriteIds() {
 }
 
 async function updateSharedOptIn() {
-  if (!canShareOrViewClubFeed()) {
+  if (!hasSharingAccess()) {
     if (sharedOptInInput) sharedOptInInput.checked = false;
     if (sharedOptInStatus) {
       sharedOptInStatus.textContent = "Club sharing is available on paid plans.";
@@ -1958,8 +1955,9 @@ function renderEntryList() {
 
   if (entries.length === 0) {
     entryList.innerHTML = currentView === "mine"
-      ? '<div class="first-note-panel"><p class="eyebrow compact">First note</p><strong>Create your first debrief.</strong><p>Example: Today we worked guard retention. I need to frame earlier and keep my knees tighter.</p><button class="ghost" id="newDebriefButton" type="button">New Debrief</button></div>'
+      ? '<div class="first-note-panel"><p class="eyebrow compact">First note</p><strong>Create your first debrief.</strong><p>Example: Today we worked guard retention. I need to frame earlier and keep my knees tighter.</p><button class="ghost" id="emptyListNewDebriefButton" type="button">New Debrief</button></div>'
       : "";
+    document.querySelector("#emptyListNewDebriefButton")?.addEventListener("click", openNewDebriefModal);
     return;
   }
 
@@ -2166,7 +2164,6 @@ async function openSharePanel(entry) {
     if (stopBtn) stopBtn.addEventListener("click", stopSharingFromModal);
     setShareModalStatus("Choose whole club, selected people, or make it private.", false);
   } catch (error) {
-    console.error("openSharePanel failed", error);
     setShareModalStatus(error?.message || "Could not open sharing. Try refreshing the page.", true);
     openShareModal(`<p class="muted">${error?.message || "Could not open sharing."}</p>`);
   }
@@ -2706,76 +2703,6 @@ async function loadMyDebriefsFallback({ from, reset }) {
   return true;
 }
 
-async function toggleShare(entry) {
-  if (!supabase || !currentUser) return;
-  const isCurrentlyShared = entry.visibility === "shared";
-  setListStatus(isCurrentlyShared ? "Making note private..." : "Sharing note...", false);
-
-  const { error: visibilityError } = await supabase
-    .from("debriefs")
-    .update({ visibility: isCurrentlyShared ? "private" : "shared" })
-    .eq("id", entry.id);
-
-  if (visibilityError) {
-    setListStatus(visibilityError.message, true);
-    return;
-  }
-
-  if (isCurrentlyShared) {
-    const { error: revokeError } = await supabase
-      .from("debrief_shares")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("debrief_id", entry.id)
-      .eq("author_user_id", currentUser.id)
-      .is("revoked_at", null);
-
-    if (revokeError) {
-      setListStatus(revokeError.message, true);
-      return;
-    }
-  } else {
-    const { data: existingShare, error: shareLookupError } = await supabase
-      .from("debrief_shares")
-      .select("id, revoked_at")
-      .eq("debrief_id", entry.id)
-      .eq("author_user_id", currentUser.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (shareLookupError) {
-      setListStatus(shareLookupError.message, true);
-      return;
-    }
-
-    if (!existingShare) {
-      const { error: insertError } = await supabase
-        .from("debrief_shares")
-        .insert({
-          debrief_id: entry.id,
-          author_user_id: currentUser.id,
-          scope: "club",
-        });
-      if (insertError) {
-        setListStatus(insertError.message, true);
-        return;
-      }
-    } else if (existingShare.revoked_at) {
-      const { error: unRevokeError } = await supabase
-        .from("debrief_shares")
-        .update({ revoked_at: null })
-        .eq("id", existingShare.id);
-      if (unRevokeError) {
-        setListStatus(unRevokeError.message, true);
-        return;
-      }
-    }
-  }
-
-  setListStatus(isCurrentlyShared ? "Note is now private." : "Note shared with club feed.", false);
-  await loadEntries({ reset: true });
-}
-
 function setAuthStatus(message, isError) {
   if (!authStatus) return;
   authStatus.textContent = message;
@@ -2915,7 +2842,7 @@ function formatFriendlyDate(value) {
 }
 
 function escapeHtml(value) {
-  var text = String(value ?? "");
+  let text = String(value ?? "");
   text = text.split("&").join("&amp;");
   text = text.split("<").join("&lt;");
   text = text.split(">").join("&gt;");
@@ -2967,7 +2894,6 @@ async function pollParseStatus(debriefId) {
       await new Promise((resolve) => window.setTimeout(resolve, pollIntervalMs));
     } catch (err) {
       // Network error, stop polling but don't fail
-      console.log("Poll error (continuing):", err);
       break;
     }
   }
@@ -3176,7 +3102,7 @@ async function retryStuckParseJobs() {
 
     if (retried > 0) {
       try {
-        fetch("https://wtmzcwsfetqhfrdlygyr.supabase.co/functions/v1/parse-refiner?limit=" + retried, {
+        fetch(`https://wtmzcwsfetqhfrdlygyr.supabase.co/functions/v1/parse-refiner?limit=${retried}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
         }).catch(() => {});
@@ -3188,4 +3114,3 @@ async function retryStuckParseJobs() {
     // Non-critical
   }
 }
-/* Auto-deployment test - Wed May  6 14:05:32 EDT 2026 */

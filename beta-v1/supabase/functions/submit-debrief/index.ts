@@ -33,14 +33,6 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: "Method not allowed" }, 405);
     }
 
-    const headerSecret = req.headers.get("x-submit-debrief-secret");
-    const authHeader = req.headers.get("authorization") ?? "";
-    const hasValidSecret = SUBMIT_DEBRIEF_SECRET && headerSecret === SUBMIT_DEBRIEF_SECRET;
-    const hasValidJwt = authHeader.startsWith("Bearer ") && authHeader.length > 20;
-    if (SUBMIT_DEBRIEF_SECRET && !hasValidSecret && !hasValidJwt) {
-      return json({ ok: false, error: "Unauthorized" }, 401);
-    }
-
     const body = await req.json() as Record<string, unknown>;
     const userId = String(body.user_id ?? "").trim();
     const clubId = String(body.club_id ?? "").trim();
@@ -52,6 +44,22 @@ Deno.serve(async (req) => {
 
     if (text.length > 3000) {
       return json({ ok: false, error: "Text exceeds 3000 characters." }, 400);
+    }
+
+    const headerSecret = req.headers.get("x-submit-debrief-secret");
+    const authHeader = req.headers.get("authorization") ?? "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";
+    const hasValidSecret = Boolean(SUBMIT_DEBRIEF_SECRET && headerSecret === SUBMIT_DEBRIEF_SECRET);
+
+    if (!hasValidSecret) {
+      if (!bearerToken) {
+        return json({ ok: false, error: "Unauthorized" }, 401);
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser(bearerToken);
+      if (userError || !userData.user || userData.user.id !== userId) {
+        return json({ ok: false, error: "Unauthorized" }, 401);
+      }
     }
 
     // Check daily rate limit
