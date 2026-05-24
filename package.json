@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.0"
+  },
+  "dependencies": {
+    "sharp": "^0.34.5"
   }
 }
