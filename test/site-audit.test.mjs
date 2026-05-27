@@ -120,6 +120,28 @@ test('Vercel config adds security headers and route-specific noindex caching', (
   assert.match(vercel, /source": "\/viewer"/);
 });
 
+test('Vercel clean app routes point at canonical full pages, not redirect shims', () => {
+  const vercelConfig = JSON.parse(read('vercel.json'));
+  const rewrites = new Map(vercelConfig.rewrites.map((rewrite) => [rewrite.source, rewrite.destination]));
+
+  assert.equal(rewrites.get('/login'), '/login.html');
+  assert.equal(rewrites.get('/signup'), '/signup.html');
+  assert.equal(rewrites.get('/viewer'), '/viewer.html');
+
+  const viewer = read('viewer.html');
+  assert.match(viewer, /viewer-shell\.js/);
+  assert.doesNotMatch(viewer, /http-equiv="refresh"/);
+});
+
+test('viewer upgrade links point at an existing pricing surface', () => {
+  const viewer = read('viewer.html');
+  const index = read('index.html');
+
+  assert.doesNotMatch(viewer, /\/account\?tab=billing/);
+  assert.match(viewer, /href="\/#pricing"/);
+  assert.match(index, /id="pricing"/);
+});
+
 test('Debrief chatbot is wired to the signed-in viewer and hardened for same-origin use', () => {
   const chatApi = read('api/chat.js');
   const widget = read('debrief-chat-widget.js');

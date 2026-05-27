@@ -13,8 +13,8 @@
     { "source": "/login-fresh/", "destination": "/login.html" },
     { "source": "/signup", "destination": "/signup.html" },
     { "source": "/signup/", "destination": "/signup.html" },
-    { "source": "/viewer", "destination": "/debrief-viewer.html" },
-    { "source": "/viewer/", "destination": "/debrief-viewer.html" },
+    { "source": "/viewer", "destination": "/viewer.html" },
+    { "source": "/viewer/", "destination": "/viewer.html" },
     { "source": "/analytics", "destination": "/analytics.html" },
     { "source": "/analytics/", "destination": "/analytics.html" }
   ],
