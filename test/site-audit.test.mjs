@@ -89,6 +89,24 @@ test('auth and app surfaces are marked noindex', () => {
   assert.match(loginFresh, /login-fresh\.js/);
 });
 
+test('auth surfaces include critical dark first-paint styles before dynamic assets load', () => {
+  const login = read('login.html');
+  const signup = read('signup.html');
+  const viewer = read('viewer.html');
+
+  for (const page of [login, signup, viewer]) {
+    assert.match(page, /<style data-critical-auth-shell>/);
+    assert.match(page, /background:\s*#0d0e12/);
+    assert.match(page, /\.brand-mark\s*{/);
+    assert.match(page, /width:\s*44px/);
+    assert.match(page, /\.hidden\s*{\s*display:\s*none\s*!important;/);
+    assert.ok(
+      page.indexOf('<style data-critical-auth-shell>') < page.indexOf('load-assets.js'),
+      'critical auth styles must be available before load-assets.js runs',
+    );
+  }
+});
+
 test('Vercel config adds security headers and route-specific noindex caching', () => {
   const vercel = read('vercel.json');
 
