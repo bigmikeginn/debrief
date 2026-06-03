@@ -26,9 +26,18 @@ const REFINER_URL = Deno.env.get("PARSE_REFINER_URL") ?? "";
 const REFINER_SECRET = Deno.env.get("PARSE_REFINER_SECRET") ?? "";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const corsHeaders = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-headers": "authorization, content-type, x-submit-debrief-secret, apikey",
+  "access-control-allow-methods": "POST, OPTIONS",
+};
 
 Deno.serve(async (req) => {
   try {
+    if (req.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
     if (req.method !== "POST") {
       return json({ ok: false, error: "Method not allowed" }, 405);
     }
@@ -79,6 +88,7 @@ Deno.serve(async (req) => {
     }
 
     const today = new Date().toISOString().slice(0, 10);
+    const localInsight = buildLocalInsight(text);
 
     // Insert debrief with source = "app"
     const { data: debrief, error: insertError } = await supabase
@@ -93,13 +103,13 @@ Deno.serve(async (req) => {
         is_debrief: true,
         visibility: "private",
         debrief_date: today,
-        note_title: text.slice(0, 80),
-        note_summary: text.slice(0, 220),
-        domain: "general",
-        topic_primary: "general",
-        topic_secondary: "note",
-        topic_tags: [],
-        action_items: [],
+        note_title: localInsight.title,
+        note_summary: localInsight.summary,
+        domain: localInsight.domain,
+        topic_primary: localInsight.topicPrimary,
+        topic_secondary: localInsight.topicSecondary,
+        topic_tags: localInsight.topicTags,
+        action_items: localInsight.actionItems,
         parse_status: "refining",
         parse_stage: 0,
         parse_confidence: 0,
@@ -170,6 +180,135 @@ Deno.serve(async (req) => {
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...corsHeaders },
   });
+}
+
+function buildLocalInsight(text: string) {
+  const domain = classifyLocalDomain(text);
+  const detailSentences = extractDetailSentences(text);
+  const titleSeed = buildLocalTitle(detailSentences[0] || firstSentence(text), domain);
+  const topicPrimary = classifyLocalTopicPrimary(text, domain);
+  const topicSecondary = classifyLocalTopicSecondary(text, topicPrimary);
+  const topicTags = buildTopicTags(domain, topicPrimary, topicSecondary);
+
+  return {
+    title: truncateText(cleanupSentence(titleSeed), 80),
+    summary: truncateText(cleanupSentence(detailSentences.join(" ")), 280),
+    domain,
+    topicPrimary,
+    topicSecondary,
+    topicTags,
+    actionItems: [],
+  };
+}
+
+function extractDetailSentences(text: string): string[] {
+  const normalized = cleanupSentence(text);
+  const sentences = normalized
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => cleanupSentence(sentence))
+    .filter((sentence) => sentence.length > 0);
+
+  if (sentences.length === 0 && normalized) return [normalized];
+  return sentences.slice(0, 2);
+}
+
+function buildLocalTitle(seed: string, domain: string): string {
+  const cleanSeed = cleanupSentence(seed);
+  if (!cleanSeed) return "Debrief note";
+
+  const lower = cleanSeed.toLowerCase();
+  if (domain === "martial_arts") {
+    if (/\bbow and arrow\b/.test(lower)) return "Bow and arrow defense";
+    if (/\brear naked choke|rnc\b/.test(lower)) return "Rear naked choke defense";
+    if (/\bback\b/.test(lower) && /\battack|attacking\b/.test(lower)) return "Back attack control";
+    if (/\bchoke\b/.test(lower) && /\bdefend|defending|defense\b/.test(lower)) return "Choke defense detail";
+  }
+
+  return cleanSeed.split(/\s+/).slice(0, 8).join(" ");
+}
+
+function classifyLocalDomain(text: string) {
+  const lower = String(text ?? "").toLowerCase();
+  if (/\b(choke|armbar|guard|sweep|bjj|jiu[- ]?jitsu|wrist lock|frame|grip|pass|takedown|side control|mount)\b/.test(lower)) return "martial_arts";
+  if (/\b(client|sale|invoice|lead|deal|marketing)\b/.test(lower)) return "business";
+  if (/\b(workout|run|lift|cardio|mobility)\b/.test(lower)) return "fitness";
+  if (/\b(wood|joinery|table|cabinet|sanding|finish)\b/.test(lower)) return "woodworking";
+  if (/\b(study|lesson|class|course|teach)\b/.test(lower)) return "education";
+  return "general";
+}
+
+function classifyLocalTopicPrimary(text: string, domain: string) {
+  const lower = String(text ?? "").toLowerCase();
+  if (domain === "martial_arts") {
+    if (/\b(grip|frame|frames|connection|connect|hook|hooks)\b/.test(lower)) return "connection";
+    if (/\b(guard|closed guard|half guard|open guard)\b/.test(lower)) return "guard";
+    if (/\b(pass|passing|pressure)\b/.test(lower)) return "passing";
+    if (/\b(escape|stand|stand-up|takedown)\b/.test(lower)) return "movement";
+    if (/\b(sweep|reversal)\b/.test(lower)) return "sweeps";
+    return "training";
+  }
+  if (domain === "business") return "process";
+  if (domain === "fitness") return "training";
+  if (domain === "woodworking") return "build";
+  if (domain === "education") return "learning";
+  return "note";
+}
+
+function classifyLocalTopicSecondary(text: string, topicPrimary: string) {
+  const lower = String(text ?? "").toLowerCase();
+  if (topicPrimary === "connection") {
+    if (/\b(frame|frames)\b/.test(lower)) return "frames";
+    if (/\b(grip|grips)\b/.test(lower)) return "grips";
+    if (/\b(break|breaks|broken)\b/.test(lower)) return "breaks";
+    return "connection_drills";
+  }
+  if (topicPrimary === "guard") return "guard_drills";
+  if (topicPrimary === "passing") return "pressure_passing";
+  if (topicPrimary === "movement") return "timing";
+  if (topicPrimary === "sweeps") return "reversals";
+  return "takeaway";
+}
+
+function buildTopicTags(domain: string, topicPrimary: string, topicSecondary: string) {
+  return Array.from(new Set([domain, topicPrimary, topicSecondary].map((item) => normalizeTag(item)).filter(Boolean))).slice(0, 6);
+}
+
+function buildLocalActionItems(keyPoints: string[]) {
+  if (!Array.isArray(keyPoints) || keyPoints.length === 0) {
+    return ["Review the takeaway before the next round", "Test one cue in live training"];
+  }
+
+  return [
+    `Review: ${keyPoints[0]}`,
+    keyPoints[1] ? `Practice: ${keyPoints[1]}` : "Try the takeaway in live rolling",
+  ].slice(0, 3);
+}
+
+function normalizeTag(value: string) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_\- ]+/g, "")
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function firstSentence(text: string) {
+  const sentence = String(text ?? "").split(/[.!?]/)[0] ?? "";
+  return cleanupSentence(sentence);
+}
+
+function cleanupSentence(value: string) {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .replace(/^[,;:\-.\s]+/, "")
+    .replace(/[,;:\-.\s]+$/, "")
+    .trim();
+}
+
+function truncateText(value: string, max: number) {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max - 3).trim()}...`;
 }

@@ -1,0 +1,14 @@
+.claude/
+.playwright-cli/
+test-results/
+*.log
+live-verify-note*.png
+login-after*.png
+login-before.png
+login-fresh-*.png
+modal-open.png
+parse-ui-*.png
+rendered-insight-*.png
+verify-*.png
+viewer-settled*.png
+tmp-viewer-smoke.png

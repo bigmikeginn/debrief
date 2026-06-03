@@ -36,6 +36,9 @@ let activeClubId = null;
 let activeShareEntry = null;
 let activeShareRecipientIds = new Set();
 let activeShareWholeClub = false;
+let newDebriefViewportTrackingInstalled = false;
+let authArrivalTransitionTimer = null;
+let authTransitionRequested = false;
 let inPasswordRecovery = false;
 let emailCooldownUntil = 0;
 let quickRange = "all";
@@ -142,6 +145,7 @@ boot();
 
 function boot() {
   if (window.__debriefUseFallbackViewer) return;
+  installNewDebriefViewportTracking();
   configureAuthPage();
   if (loginButton) {
     loginButton.addEventListener("click", (event) => {
@@ -438,8 +442,14 @@ function toDateInputValue(date) {
 // Phase 4C: Parse Status Polling & Feedback System
 // ============================================================
 
-// Toast notification system (relies on #toastContainer in HTML)
-const toastContainer = document.querySelector("#toastContainer");
+// Toast notification system
+const toastContainer = document.querySelector("#toastContainer") || (() => {
+  const container = document.createElement("div");
+  container.id = "toastContainer";
+  container.className = "toast-container";
+  document.body.appendChild(container);
+  return container;
+})();
 
 function showToast(message, type = "info", duration = 3000) {
   const toast = document.createElement("div");
@@ -472,9 +482,10 @@ function startParsePolling(debriefId) {
     }
 
     try {
-      const response = await fetch(`/functions/v1/parse-job/${debriefId}`, {
-        headers: { Authorization: `Bearer ${currentAccessToken}` }
-      });
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/get-parse-status?debrief_id=${debriefId}`,
+        { headers: { apikey: SUPABASE_PUBLISHABLE_KEY } }
+      );
 
       if (!response.ok) {
         if (attempts < maxAttempts) {
@@ -484,13 +495,14 @@ function startParsePolling(debriefId) {
       }
 
       const jobStatus = await response.json();
+      const parseStatus = jobStatus.parse_status || "refining";
 
       // Update the displayed debrief with new parse status
       const entry = entries.find(e => e.id === debriefId);
       if (entry) {
-        entry.parse_status = jobStatus.parseStatus;
-        entry.parse_stage = jobStatus.stage;
-        entry.parse_confidence = jobStatus.confidence || entry.parse_confidence;
+        entry.parse_status = parseStatus;
+        entry.parse_stage = jobStatus.parse_stage ?? entry.parse_stage;
+        entry.parse_confidence = jobStatus.parse_confidence || entry.parse_confidence;
 
         // Re-render if this is the active entry
         if (activeEntryId === debriefId) {
@@ -502,12 +514,12 @@ function startParsePolling(debriefId) {
       }
 
       // Stop polling when done
-      if (jobStatus.parseStatus === "ready" || jobStatus.parseStatus === "needs_review") {
+      if (parseStatus === "ready" || parseStatus === "needs_review") {
         parsePollers.delete(debriefId);
-        showToast("✅ Debrief parsed successfully!", "success");
-      } else if (jobStatus.parseStatus === "failed") {
+        showToast("✅ Debrief distilled into insights!", "success");
+      } else if (parseStatus === "failed") {
         parsePollers.delete(debriefId);
-        showToast("❌ Parsing failed - try again", "error");
+        showToast("❌ Couldn’t distill this note yet - try again", "error");
       } else {
         // Continue polling
         setTimeout(pollFn, 2000);
@@ -531,19 +543,19 @@ function renderParseStatus(entry) {
   const confidence = entry.parse_confidence ? `${Math.round(entry.parse_confidence * 100)}%` : "0%";
 
   if (status === "ready") {
-    return `✅ Parsed successfully (${confidence} confidence)`;
+    return `✅ Distilled into insight fields (${confidence} confidence)`;
   }
   if (status === "needs_review") {
-    return `⚠️ Needs review (${confidence} confidence)`;
+    return `⚠️ Distilled, but needs a quick look (${confidence} confidence)`;
   }
   if (status === "refining" || status === "queued") {
     const estimatedSeconds = stage === 0 ? 20 : stage === 1 ? 10 : 5;
-    return `⏳ Parsing... (Est. ${estimatedSeconds}s)`;
+    return `⏳ Distilling your note... (Est. ${estimatedSeconds}s)`;
   }
   if (status === "failed") {
-    return `❌ Parsing failed`;
+    return `❌ Couldn’t distill this note yet`;
   }
-  return `Processing (${confidence} confidence)`;
+  return `Processing insight fields (${confidence} confidence)`;
 }
 
 async function handleRefreshFeed() {
@@ -940,18 +952,21 @@ async function handleSignedInSession() {
 
   try {
     if (pageKind === "login" || pageKind === "signup") {
+      prepareAuthTransition();
+      await delay(180);
       redirectTo("/viewer");
       return;
     }
 
+    playAuthArrivalTransition();
     await loadClubContext();
     preloadActiveClubMembers(); // B2: Pre-load members to avoid modal lag (fire & forget)
     await loadPlanStatus();
-  renderWhatsNewNotice();
-  renderViewState();
-  await retryStuckParseJobs();
-  await loadEntries({ reset: true });
-  loadViewerPreferences();
+    renderWhatsNewNotice();
+    renderViewState();
+    await retryStuckParseJobs();
+    await loadEntries({ reset: true });
+    loadViewerPreferences();
     sessionStorage.removeItem("debrief-login-handoff");
   } finally {
     handlingSignedInSession = false;
@@ -998,6 +1013,33 @@ function redirectTo(path) {
   window.location.replace(destination.toString());
 }
 
+function prepareAuthTransition() {
+  authTransitionRequested = true;
+  sessionStorage.setItem("debrief-auth-transition", "1");
+  document.body.classList.add("auth-transitioning");
+  if (authArrivalTransitionTimer) {
+    window.clearTimeout(authArrivalTransitionTimer);
+    authArrivalTransitionTimer = null;
+  }
+}
+
+function playAuthArrivalTransition() {
+  const hasTransition = authTransitionRequested || sessionStorage.getItem("debrief-auth-transition") === "1";
+  if (!hasTransition) return;
+  authTransitionRequested = false;
+  document.body.classList.add("auth-transitioning");
+  if (authArrivalTransitionTimer) window.clearTimeout(authArrivalTransitionTimer);
+  authArrivalTransitionTimer = window.setTimeout(() => {
+    document.body.classList.remove("auth-transitioning");
+    sessionStorage.removeItem("debrief-auth-transition");
+    authArrivalTransitionTimer = null;
+  }, 420);
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
 function renderRecoveryState() {
   if (!passwordResetForm) return;
   passwordResetForm.classList.toggle("hidden", !inPasswordRecovery);
@@ -1027,6 +1069,7 @@ async function handleLogin() {
   }
   currentUser = data.session?.user ?? data.user ?? null;
   currentAccessToken = data.session?.access_token || currentAccessToken;
+  prepareAuthTransition();
   setAuthStatus("Logged in. Opening your account...", false);
   await handleSignedInSession();
 }
@@ -1253,12 +1296,15 @@ async function handleLogout() {
 function forceLocalLogout() {
   currentUser = null;
   inPasswordRecovery = false;
+  authTransitionRequested = false;
   entries = [];
   favouriteIds = new Set();
   clubContext = { active_club_id: null, clubs: [] };
   activeClubId = null;
   activeEntryId = null;
   hasMore = false;
+  sessionStorage.removeItem("debrief-auth-transition");
+  document.body.classList.remove("auth-transitioning");
   clearSupabaseLocalAuth();
   renderAuthState();
   renderRecoveryState();
@@ -1303,6 +1349,7 @@ function renderAuthState() {
     renderWhatsNewNotice();
     renderViewState();
   } else {
+    document.body.classList.remove("auth-transitioning");
     if (topSession) topSession.classList.add("hidden");
     closeTopSessionPanel();
     if (accountCard) accountCard.classList.remove("hidden");
@@ -2004,7 +2051,19 @@ function renderEntryDetail() {
     startParsePolling(entry.id);
   }
 
-  const displayKeyPoints = normalizeDisplayKeyPoints(entry.key_points, entry.raw_notes || "");
+  const rawNotes = entry.raw_notes || "";
+  const localInsight = buildLocalInsightFields(rawNotes);
+  const storedSummary = String(entry.note_summary || entry.summary_text || "");
+  const rawComparable = normalizeComparableText(rawNotes);
+  const summaryComparable = normalizeComparableText(storedSummary);
+  const summaryLooksRaw = Boolean(
+    !summaryComparable
+    || summaryComparable === rawComparable
+    || rawComparable.startsWith(summaryComparable)
+    || storedSummary.trim().length >= Math.max(40, rawNotes.trim().length * 0.8)
+  );
+  const useLocalInsight = entry.parse_status !== "ready" || summaryLooksRaw;
+  const displayKeyPoints = normalizeDisplayKeyPoints(entry.key_points, rawNotes);
   const keyPoints = displayKeyPoints.length
     ? `<ul class="keypoint-grid">${displayKeyPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul>`
     : "<p>No key points parsed.</p>";
@@ -2020,9 +2079,10 @@ function renderEntryDetail() {
   const isFavourite = favouriteIds.has(entry.id);
   const favouriteLabel = isFavourite ? "Saved" : "Save";
   const dateLabel = entry.debrief_date || asDate(entry.created_at);
-  const title = entry.note_title || entry.technique || "Untitled debrief";
-  const summary = entry.note_summary || entry.summary_text || "No summary parsed yet.";
-  const rawNotes = entry.raw_notes || "";
+  const title = useLocalInsight ? (localInsight.title || entry.note_title || entry.technique || "Untitled debrief") : (entry.note_title || entry.technique || "Untitled debrief");
+  const summary = useLocalInsight
+    ? localInsight.summary
+    : (entry.note_summary || entry.summary_text || localInsight.summary || "No summary parsed yet.");
   const reflections = entry.reflections || "";
   const showReflections = reflections && normalizeComparableText(reflections) !== normalizeComparableText(rawNotes);
 
@@ -2040,11 +2100,16 @@ function renderEntryDetail() {
       </div>
     </div>
     <div class="summary-card">
-      <h3>Summary</h3>
+      <p class="eyebrow compact">AI takeaway</p>
+      <div class="parse-callout">
+        <strong>This is distilled from your raw note.</strong>
+        <p>It preserves the technique details first, then adds interpretation only when the note supports it.</p>
+      </div>
+      <h3>Coach&apos;s takeaway</h3>
       <p>${escapeHtml(summary)}</p>
     </div>
     <div class="detail-block">
-      <h3>Key Points</h3>
+      <h3>What I pulled out</h3>
       ${keyPoints}
     </div>
     <details class="detail-disclosure">
@@ -2075,11 +2140,11 @@ function renderEntryDetail() {
           ${actionItems}
         </div>
         <div class="detail-block">
-          <h3>Reflections</h3>
+          <h3>Your reflection</h3>
           <p>${showReflections ? escapeHtml(reflections) : "Captured in the summary and key points."}</p>
         </div>
         <div class="detail-block">
-          <h3>Parse Status</h3>
+          <h3>Insight status</h3>
           <p class="parse-status-display">${escapeHtml(parseStatusDisplay)}</p>
         </div>
       </div>
@@ -2805,13 +2870,7 @@ function normalizeDisplayKeyPoints(points, rawNotes) {
 }
 
 function buildDisplayKeyPointFallback(rawNotes) {
-  const text = String(rawNotes ?? "").toLowerCase();
-  const points = [];
-  if (/\b(weight|heavy|fall|pressure|load)\b/.test(text)) points.push("Load weight before moving");
-  if (/\b(?:grip|grips|connect|hook|hooks|frame)\b/.test(text)) points.push("Build connection first");
-  if (/\b(?:light|timing|when|then|start)\b/.test(text)) points.push("Move when resistance lightens");
-  if (/\b(?:finish|complete|follow through|follow-through)\b/.test(text)) points.push("Follow through to finish");
-  return points.length ? points.slice(0, 4) : ["Choose one main lesson", "Pick the next training focus"];
+  return extractDetailSentences(rawNotes).slice(0, 4);
 }
 
 function inferLegacyDomain(techniqueType) {
@@ -2859,15 +2918,33 @@ function openNewDebriefModal() {
     setAuthStatus("Log in first to submit a debrief.", true);
     return;
   }
+  syncNewDebriefViewportHeight();
   newDebriefText.value = "";
   if (newDebriefStatus) newDebriefStatus.textContent = "";
   newDebriefModalOverlay.classList.remove("hidden");
+  window.requestAnimationFrame(syncNewDebriefViewportHeight);
   newDebriefText.focus();
 }
 
 function closeNewDebriefModal() {
   if (!newDebriefModalOverlay) return;
   newDebriefModalOverlay.classList.add("hidden");
+}
+
+function installNewDebriefViewportTracking() {
+  if (newDebriefViewportTrackingInstalled) return;
+  newDebriefViewportTrackingInstalled = true;
+  syncNewDebriefViewportHeight();
+  window.addEventListener("resize", syncNewDebriefViewportHeight, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", syncNewDebriefViewportHeight, { passive: true });
+    window.visualViewport.addEventListener("scroll", syncNewDebriefViewportHeight, { passive: true });
+  }
+}
+
+function syncNewDebriefViewportHeight() {
+  const viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
+  document.documentElement.style.setProperty("--new-debrief-viewport-height", `${Math.max(0, Math.round(viewportHeight))}px`);
 }
 
 async function pollParseStatus(debriefId) {
@@ -2923,26 +3000,20 @@ async function handleNativeSubmit() {
     const edgeResult = await submitViaEdgeFunction(currentUser.id, activeClubId, text);
     if (edgeResult.ok) {
       const debriefId = edgeResult.debrief_id;
-      setNewDebriefStatus("Saved! Analyzing your training note...", false);
+      setNewDebriefStatus("Saved! Distilling your training note into insight fields...", false);
       if (newDebriefText) newDebriefText.value = "";
-
-      // Poll for parse completion
-      const parsed = await pollParseStatus(debriefId);
-      if (parsed) {
-        setNewDebriefStatus("✅ Analysis complete! Your note is now in the timeline.", false);
-      } else {
-        setNewDebriefStatus("Note saved. Analysis is still running, will appear shortly.", false);
-      }
-
-      window.setTimeout(() => closeNewDebriefModal(), 1500);
+      await applyLocalInsightFallback(debriefId, text);
+      setNewDebriefStatus("Saved! Added to your timeline with technique details preserved.", false);
+      window.setTimeout(() => closeNewDebriefModal(), 900);
       await loadEntries({ reset: true });
+      startParsePolling(debriefId);
       return;
     }
     throw new Error(edgeResult.error || "Edge function failed");
   } catch (err) {
     try {
       await submitViaDirectInsert(currentUser.id, activeClubId, text);
-      setNewDebriefStatus("Saved! Your note will appear after analysis.", false);
+      setNewDebriefStatus("Saved! Your note will appear after the insight pass finishes.", false);
       if (newDebriefText) newDebriefText.value = "";
       window.setTimeout(() => closeNewDebriefModal(), 1200);
       await loadEntries({ reset: true });
@@ -2978,14 +3049,157 @@ async function submitViaEdgeFunction(userId, clubId, text) {
     );
 
     const data = await response.json();
-    return { ok: response.ok && data.ok, error: data.error || "" };
+    return {
+      ok: response.ok && data.ok,
+      debrief_id: data.debrief_id || "",
+      parse_status: data.parse_status || "",
+      error: data.error || "",
+    };
   } catch (err) {
     return { ok: false, error: err?.message || "Edge function unavailable" };
   }
 }
 
+async function applyLocalInsightFallback(debriefId, text) {
+  if (!supabase || !debriefId || !text) return;
+  const localInsight = buildLocalInsightFields(text);
+  try {
+    await supabase
+      .from("debriefs")
+      .update({
+        note_title: localInsight.title,
+        note_summary: localInsight.summary,
+        domain: localInsight.domain,
+        topic_primary: localInsight.topicPrimary,
+        topic_secondary: localInsight.topicSecondary,
+        topic_tags: localInsight.topicTags,
+        action_items: localInsight.actionItems,
+        parse_status: "refining",
+        parse_stage: 0,
+        parse_confidence: 0.5,
+        needs_review: false,
+        last_parsed_at: new Date().toISOString(),
+      })
+      .eq("id", debriefId);
+  } catch (_error) {
+    // Best-effort fallback only.
+  }
+}
+
+function buildLocalInsightFields(text) {
+  const domain = classifyLocalDomain(text);
+  const detailSentences = extractDetailSentences(text);
+  const titleSeed = buildLocalTitle(detailSentences[0] || firstSentence(text), domain);
+  const topicPrimary = classifyLocalTopicPrimary(text, domain);
+  const topicSecondary = classifyLocalTopicSecondary(text, topicPrimary);
+  const topicTags = normalizeFallbackTags(domain, topicPrimary, topicSecondary);
+
+  return {
+    keyPoints: detailSentences.slice(0, 4),
+    title: truncateText(cleanupSentence(titleSeed), 80),
+    summary: truncateText(cleanupSentence(detailSentences.join(" ")), 280),
+    domain,
+    topicPrimary,
+    topicSecondary,
+    topicTags,
+    actionItems: [],
+  };
+}
+
+function extractDetailSentences(text) {
+  const normalized = cleanupSentence(text);
+  const sentences = normalized
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => cleanupSentence(sentence))
+    .filter((sentence) => sentence.length > 0);
+
+  if (sentences.length === 0 && normalized) return [normalized];
+  return sentences.slice(0, 2);
+}
+
+function buildLocalTitle(seed, domain) {
+  const cleanSeed = cleanupSentence(seed);
+  if (!cleanSeed) return "Debrief note";
+
+  const lower = cleanSeed.toLowerCase();
+  if (domain === "martial_arts") {
+    if (/\bbow and arrow\b/.test(lower)) return "Bow and arrow defense";
+    if (/\brear naked choke|rnc\b/.test(lower)) return "Rear naked choke defense";
+    if (/\bback\b/.test(lower) && /\battack|attacking\b/.test(lower)) return "Back attack control";
+    if (/\bchoke\b/.test(lower) && /\bdefend|defending|defense\b/.test(lower)) return "Choke defense detail";
+  }
+
+  return cleanSeed.split(/\s+/).slice(0, 8).join(" ");
+}
+
+function firstSentence(text) {
+  const sentence = String(text ?? "").split(/[.!?]/)[0] ?? "";
+  return cleanupSentence(sentence);
+}
+
+function cleanupSentence(value) {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .replace(/^[,;:\-.\s]+/, "")
+    .replace(/[,;:\-.\s]+$/, "")
+    .trim();
+}
+
+function truncateText(value, max) {
+  const clean = String(value ?? "");
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, max - 3).trim()}...`;
+}
+
+function classifyLocalDomain(text) {
+  const lower = String(text ?? "").toLowerCase();
+  if (/\b(choke|armbar|guard|sweep|bjj|jiu[- ]?jitsu|wrist lock|frame|grip|pass|takedown|side control|mount)\b/.test(lower)) return "martial_arts";
+  if (/\b(client|sale|invoice|lead|deal|marketing)\b/.test(lower)) return "business";
+  if (/\b(workout|run|lift|cardio|mobility)\b/.test(lower)) return "fitness";
+  if (/\b(wood|joinery|table|cabinet|sanding|finish)\b/.test(lower)) return "woodworking";
+  if (/\b(study|lesson|class|course|teach)\b/.test(lower)) return "education";
+  return "general";
+}
+
+function classifyLocalTopicPrimary(text, domain) {
+  const lower = String(text ?? "").toLowerCase();
+  if (domain === "martial_arts") {
+    if (/\b(grip|frame|frames|connection|connect|hook|hooks)\b/.test(lower)) return "connection";
+    if (/\b(guard|closed guard|half guard|open guard)\b/.test(lower)) return "guard";
+    if (/\b(pass|passing|pressure)\b/.test(lower)) return "passing";
+    if (/\b(escape|escapeing|stand|stand-up|takedown)\b/.test(lower)) return "movement";
+    if (/\b(sweep|reversal)\b/.test(lower)) return "sweeps";
+    return "training";
+  }
+  if (domain === "business") return "process";
+  if (domain === "fitness") return "training";
+  if (domain === "woodworking") return "build";
+  if (domain === "education") return "learning";
+  return "note";
+}
+
+function classifyLocalTopicSecondary(text, topicPrimary) {
+  const lower = String(text ?? "").toLowerCase();
+  if (topicPrimary === "connection") {
+    if (/\b(frame|frames)\b/.test(lower)) return "frames";
+    if (/\b(grip|grips)\b/.test(lower)) return "grips";
+    if (/\b(break|breaks|broken)\b/.test(lower)) return "breaks";
+    return "connection_drills";
+  }
+  if (topicPrimary === "guard") return "guard_drills";
+  if (topicPrimary === "passing") return "pressure_passing";
+  if (topicPrimary === "movement") return "timing";
+  if (topicPrimary === "sweeps") return "reversals";
+  return "takeaway";
+}
+
+function normalizeFallbackTags(domain, topicPrimary, topicSecondary) {
+  return Array.from(new Set([domain, topicPrimary, topicSecondary].map((item) => normalizeTag(item)).filter(Boolean))).slice(0, 6);
+}
+
 async function submitViaDirectInsert(userId, clubId, text) {
   const today = new Date().toISOString().slice(0, 10);
+  const localInsight = buildLocalInsightFields(text);
   const { data: debrief, error: insertError } = await supabase
     .from("debriefs")
     .insert({
@@ -2998,13 +3212,13 @@ async function submitViaDirectInsert(userId, clubId, text) {
       is_debrief: true,
       visibility: "private",
       debrief_date: today,
-      note_title: text.slice(0, 80),
-      note_summary: text.slice(0, 220),
-      domain: "general",
-      topic_primary: "general",
-      topic_secondary: "note",
-      topic_tags: [],
-      action_items: [],
+      note_title: localInsight.title,
+      note_summary: localInsight.summary,
+      domain: localInsight.domain,
+      topic_primary: localInsight.topicPrimary,
+      topic_secondary: localInsight.topicSecondary,
+      topic_tags: localInsight.topicTags,
+      action_items: localInsight.actionItems,
       parse_status: "refining",
       parse_stage: 0,
       parse_confidence: 0.5,
