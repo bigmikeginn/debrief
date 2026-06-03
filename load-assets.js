@@ -2,7 +2,7 @@
 // This script dynamically injects CSS and JS based on the deploy-manifest.json
 (async () => {
   try {
-    const manifest = await fetch('/deploy-manifest.json').then(r => r.json());
+    const manifest = await fetch('/deploy-manifest.json?v=2026-06-02-insight-5', { cache: 'no-store' }).then(r => r.json());
     const { css, js, fallback, touchFeedback } = manifest.assets;
 
     // Inject CSS
@@ -36,24 +36,24 @@
     }
   } catch (error) {
     console.error('Failed to load asset manifest:', error);
-    // Fallback: if manifest fails, try to load with .20260430g suffix (current version)
+    // Fallback: if manifest fails, try to load the current source bundle directly.
     // This allows graceful degradation if deploy-manifest.json is not yet deployed
     const linkCSS = document.createElement('link');
     linkCSS.rel = 'stylesheet';
-    linkCSS.href = 'debrief-viewer.20260430g.css';
+    linkCSS.href = 'debrief-viewer.20260430g.css?v=2026-06-02-insight-5';
     document.head.appendChild(linkCSS);
 
     const scriptFallback = document.createElement('script');
-    scriptFallback.src = 'login-fallback.92d54de8.js';
+    scriptFallback.src = 'login-fallback.92d54de8.js?v=2026-06-02-insight-5';
     document.body.appendChild(scriptFallback);
 
     const scriptMain = document.createElement('script');
     scriptMain.type = 'module';
-    scriptMain.src = 'debrief-viewer.36c808a4.js';
+    scriptMain.src = 'debrief-viewer.20260430g.js?v=2026-06-02-insight-5';
     document.body.appendChild(scriptMain);
 
     const scriptTouch = document.createElement('script');
-    scriptTouch.src = 'debrief-touch-feedback.20260430g.js';
+    scriptTouch.src = 'debrief-touch-feedback.20260430g.js?v=2026-06-02-insight-5';
     document.body.appendChild(scriptTouch);
   }
 })();

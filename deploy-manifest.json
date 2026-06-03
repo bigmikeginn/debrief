@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-05-06T23:35:48Z",
   "assets": {
-    "css": "debrief-viewer.16e3f99e.css",
-    "js": "debrief-viewer.10d28c90.js",
-    "touchFeedback": "debrief-touch-feedback.a700bae0.js",
-    "fallback": "login-fallback.92d54de8.js"
-  }
+    "js": "debrief-viewer.20260430g.js?v=2026-06-02-insight-5",
+    "fallback": "login-fallback.92d54de8.js",
+    "touchFeedback": "debrief-touch-feedback.20260430g.js?v=2026-06-02-insight-5",
+    "css": "debrief-viewer.20260430g.css?v=2026-06-02-insight-5"
+  },
+  "timestamp": "2026-06-02T20:05:00Z"
 }

@@ -21,8 +21,12 @@
     var css = [
       "#debrief-chat-root{pointer-events:none!important;}",
       "#dchat-btn,#dchat-window{pointer-events:all!important;}",
-      "#dchat-btn{position:fixed!important;right:24px!important;bottom:24px!important;width:62px!important;height:62px!important;border-radius:50%!important;background:linear-gradient(135deg,#ffca76,#c66d34)!important;color:#17110a!important;border:0!important;cursor:pointer!important;box-shadow:0 14px 38px rgba(198,109,52,.42)!important;font:900 24px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important;z-index:2147483647!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;transition:transform .2s,box-shadow .2s!important;}",
-      "#dchat-btn:hover{transform:scale(1.07)!important;box-shadow:0 18px 48px rgba(198,109,52,.52)!important;}",
+      "#dchat-btn{position:fixed!important;right:24px!important;bottom:24px!important;width:62px!important;height:62px!important;border-radius:50%!important;background:linear-gradient(135deg,#ffca76,#c66d34)!important;color:#17110a!important;border:0!important;cursor:pointer!important;box-shadow:0 14px 38px rgba(198,109,52,.42)!important;font:900 24px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important;z-index:2147483647!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;transition:transform .2s,box-shadow .2s,filter .2s!important;}",
+      "#dchat-btn:hover{transform:scale(1.07)!important;box-shadow:0 18px 48px rgba(198,109,52,.52)!important;filter:saturate(1.03)!important;}",
+      "#dchat-btn:focus-visible{outline:2px solid rgba(255,202,118,.95)!important;outline-offset:3px!important;}",
+      "#dchat-btn .dchat-label{display:none!important;}",
+      "#dchat-btn .dchat-mark{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:100%!important;}",
+      "#dchat-btn .dchat-mark span{font:900 24px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important;}",
       "#dchat-window{position:fixed!important;right:24px!important;bottom:94px!important;width:370px!important;height:min(560px,calc(100vh - 116px))!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:18px!important;background:#11131a!important;color:#f7f4ee!important;box-shadow:0 28px 80px rgba(0,0,0,.45)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif!important;z-index:2147483646!important;opacity:0!important;transform:translateY(12px) scale(.98)!important;transition:opacity .22s,transform .22s!important;pointer-events:none!important;}",
       "#dchat-window.dopen{opacity:1!important;transform:translateY(0) scale(1)!important;pointer-events:all!important;}",
       "#dchat-header{display:flex!important;align-items:center!important;gap:11px!important;padding:14px 16px!important;background:linear-gradient(135deg,#191b24,#282331)!important;border-bottom:1px solid rgba(255,255,255,.1)!important;}",
@@ -38,7 +42,7 @@
       "#dqr{display:flex!important;flex-wrap:wrap!important;gap:6px!important;padding:2px 4px 8px!important;}.dqr-btn{background:#151821!important;border:1px solid rgba(255,202,118,.45)!important;color:#ffca76!important;border-radius:999px!important;padding:6px 10px!important;font-size:12px!important;line-height:1.35!important;cursor:pointer!important;font-family:inherit!important;}.dqr-btn:hover{background:#ffca76!important;color:#17110a!important;}",
       "#dchat-input-row{display:flex!important;gap:8px!important;padding:11px 12px!important;background:#11131a!important;border-top:1px solid rgba(255,255,255,.1)!important;}#dchat-in{flex:1!important;min-width:0!important;border:1px solid rgba(255,255,255,.18)!important;border-radius:999px!important;padding:10px 14px!important;background:#080a0f!important;color:#f7f4ee!important;font-size:14px!important;outline:0!important;font-family:inherit!important;}#dchat-in:focus{border-color:#ffca76!important;}#dchat-go{min-width:54px!important;height:40px!important;border-radius:999px!important;border:0!important;background:linear-gradient(135deg,#ffca76,#c66d34)!important;color:#17110a!important;cursor:pointer!important;font-weight:900!important;display:flex!important;align-items:center!important;justify-content:center!important;}#dchat-go:disabled{opacity:.45!important;cursor:default!important;}",
       "#dchat-foot{text-align:center!important;padding:6px!important;font-size:11px!important;color:#7e879a!important;background:#11131a!important;}",
-      "@media(max-width:480px){#dchat-window{right:0!important;bottom:0!important;width:100%!important;height:92vh!important;border-radius:18px 18px 0 0!important;}#dchat-btn{right:16px!important;bottom:16px!important;}}",
+      "@media(max-width:480px){#dchat-window{right:0!important;bottom:0!important;width:100%!important;height:92vh!important;border-radius:18px 18px 0 0!important;}#dchat-btn{left:16px!important;right:auto!important;bottom:calc(16px + env(safe-area-inset-bottom))!important;width:auto!important;min-width:132px!important;height:52px!important;padding:0 16px 0 12px!important;border-radius:999px!important;justify-content:flex-start!important;gap:10px!important;font-size:14px!important;letter-spacing:.02em!important;box-shadow:0 14px 32px rgba(198,109,52,.36)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;}#dchat-btn .dchat-mark{width:28px!important;height:28px!important;border-radius:999px!important;background:rgba(23,17,10,.14)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important;}#dchat-btn .dchat-mark span{font-size:18px!important;}#dchat-btn .dchat-label{display:inline!important;font-size:12px!important;font-weight:900!important;line-height:1!important;letter-spacing:.12em!important;text-transform:uppercase!important;}#dchat-btn:hover{transform:none!important;}}",
     ].join("");
 
     var style = document.createElement("style");
@@ -46,7 +50,7 @@
     document.head.appendChild(style);
 
     root.innerHTML =
-      '<button id="dchat-btn" aria-label="Chat with Debrief">D</button>' +
+      '<button id="dchat-btn" aria-label="Chat with Debrief"><span class="dchat-mark"><span>D</span></span><span class="dchat-label">Assistant</span></button>' +
       '<div id="dchat-window" role="dialog" aria-label="Debrief Chat Assistant">' +
       '<div id="dchat-header"><div id="dchat-avatar">D</div><div id="dchat-title"><h3>Debrief Assistant</h3><p>Setup and first-note help</p></div><button id="dchat-x" aria-label="Close">x</button></div>' +
       '<div id="dchat-msgs"></div>' +
@@ -63,6 +67,18 @@
     var msgs = document.getElementById("dchat-msgs");
     var input = document.getElementById("dchat-in");
     var sendButton = document.getElementById("dchat-go");
+    var mobileLauncherQuery = window.matchMedia("(max-width: 480px)");
+
+    function renderLauncher() {
+      if (!btn) return;
+      var isMobile = mobileLauncherQuery.matches;
+      var mark = btn.querySelector(".dchat-mark span");
+      var label = btn.querySelector(".dchat-label");
+      if (mark) mark.textContent = open ? "×" : "D";
+      if (label) label.textContent = open ? "Close" : "Help";
+      btn.setAttribute("aria-label", open ? "Close Debrief chat" : "Chat with Debrief");
+      btn.setAttribute("title", isMobile ? (open ? "Close Debrief chat" : "Open Debrief assistant") : "");
+    }
 
     function escapeHtml(text) {
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -133,7 +149,7 @@
     function toggle() {
       open = !open;
       win.classList.toggle("dopen", open);
-      btn.textContent = open ? "x" : "D";
+      renderLauncher();
       if (open && msgs.childElementCount === 0) {
         addBot(WELCOME);
         addQuickReplies();
@@ -183,6 +199,8 @@
     btn.addEventListener("click", toggle);
     close.addEventListener("click", toggle);
     sendButton.addEventListener("click", send);
+    mobileLauncherQuery.addEventListener("change", renderLauncher);
+    renderLauncher();
     input.addEventListener("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();

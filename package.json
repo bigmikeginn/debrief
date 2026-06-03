@@ -4,6 +4,7 @@
   "description": "Training note archive and analysis",
   "private": true,
   "scripts": {
+    "test": "node --test test/*.test.mjs",
     "build": "echo 'Running minification and versioning...' && bash build.sh",
     "deploy": "bash deploy.sh"
   },

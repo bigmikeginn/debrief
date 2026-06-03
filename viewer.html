@@ -4,12 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Log In | Debrief</title>
+  <meta name="theme-color" content="#090a0d">
   <link rel="icon" type="image/png" href="debrief-mark-gold.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html { background: #090a0d; color-scheme: dark; }
+    body { background: #090a0d; }
+  </style>
 </head>
 <body>
+  <div class="auth-transition-curtain" aria-hidden="true"></div>
   <div class="shell">
     <div id="toastContainer" class="toast-container"></div>
     <header class="topbar">
@@ -355,7 +361,7 @@
     setTimeout(checkAnalyticsAccess, 100);
   </script>
 
-  <script src="load-assets.js"></script>
+  <script src="load-assets.js?v=2026-06-02-insight-5"></script>
 </body>
 </html>
 

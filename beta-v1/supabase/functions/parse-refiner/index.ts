@@ -54,9 +54,18 @@ const PARSE_REFINER_BATCH_SIZE = Number(Deno.env.get("PARSE_REFINER_BATCH_SIZE")
 const PARSE_REFINER_MAX_ATTEMPTS = Number(Deno.env.get("PARSE_REFINER_MAX_ATTEMPTS") ?? "3");
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const corsHeaders = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-headers": "authorization, content-type, x-parse-refiner-secret, apikey",
+  "access-control-allow-methods": "POST, OPTIONS",
+};
 
 Deno.serve(async (req) => {
   try {
+    if (req.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
     if (req.method !== "POST") {
       return json({ ok: false, error: "Method not allowed" }, 405);
     }
@@ -110,7 +119,7 @@ Deno.serve(async (req) => {
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...corsHeaders },
   });
 }
 
@@ -358,18 +367,22 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
   }
 
   const prompt = [
-    "You are a universal debrief parser.",
+    "You are a faithful training debrief parser.",
+    "Your job is to preserve concrete technique details before any coach interpretation.",
     "Return valid JSON only with exactly these keys:",
     "title, summary, domain, topic_primary, topic_secondary, tags, action_items, confidence",
     "Rules:",
-    "- title: concise 3-8 words",
-    "- summary: 1-2 sentences under 220 chars",
+    "- title: concise 3-8 words that helps the user find the note later",
+    "- summary: faithful technique summary under 280 chars; preserve the specific mechanics, sequence, and backup options from the note",
     "- domain: one of martial_arts, business, fitness, woodworking, education, general, other",
-    "- topic_primary: short category",
+    "- topic_primary: short category from the note's concrete position, attack, defense, or task",
     "- topic_secondary: specific subtopic, not a full sentence",
-    "- tags: 2-6 short tags, 1-3 words each; do not copy full input sentences",
-    "- action_items: 0-5 concrete next actions",
+    "- tags: 2-6 short searchable tags, 1-3 words each, grounded in specific note content",
+    "- action_items: 0-5 concrete next actions only if the note states or clearly implies a practice action",
     "- confidence: number from 0 to 1",
+    "- coach takeaway is secondary: include interpretation only when it is directly supported by the note's mechanics",
+    "- Do not collapse details into generic slogans such as build connection first, load weight before moving, or move when resistance lightens.",
+    "- If the note is vague, preserve what is actually stated and lower confidence instead of filling gaps.",
     `If date context needed, assume ${fallbackDate}.`,
     `Input: ${rawText}`,
   ].join("\n");
@@ -408,7 +421,7 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
     .map((tag) => normalizeTag(tag, rawText))
     .filter(Boolean)
     .slice(0, 8);
-  const actionItems = normalizeStringArray(parsed.action_items).map((v) => truncate(v, 120)).slice(0, 6);
+  const actionItems = normalizeStringArray(parsed.action_items).map((v) => truncateText(v, 120)).slice(0, 6);
   const confidence = asNumber(parsed.confidence);
 
   return {
@@ -520,14 +533,14 @@ function normalizeStringArray(value: unknown): string[] {
 
 function normalizeTitle(title: string, raw: string): string {
   const clean = cleanupSentence(title);
-  if (clean.length >= 3) return truncate(clean, 80);
-  return truncate(cleanupSentence(raw.split(/[.!?]/)[0] ?? "Debrief note"), 80);
+  if (clean.length >= 3) return truncateText(clean, 80);
+  return truncateText(cleanupSentence(raw.split(/[.!?]/)[0] ?? "Debrief note"), 80);
 }
 
 function normalizeSummary(summary: string, raw: string): string {
   const clean = cleanupSentence(summary);
-  if (clean.length >= 20) return truncate(clean, 220);
-  return truncate(cleanupSentence(raw), 220);
+  if (clean.length >= 20) return truncateText(clean, 280);
+  return truncateText(cleanupSentence(raw), 280);
 }
 
 function normalizeDomain(domain: string, raw: string): string {
@@ -546,8 +559,8 @@ function normalizeDomain(domain: string, raw: string): string {
 
 function normalizeTopic(value: string, fallback: string): string {
   const clean = cleanupSentence(value).toLowerCase();
-  if (clean) return truncate(clean.split(/\s+/).slice(0, 5).join("_"), 48);
-  return truncate(cleanupSentence(fallback).toLowerCase().replace(/\s+/g, "_"), 48);
+  if (clean) return truncateText(clean.split(/\s+/).slice(0, 5).join("_"), 48);
+  return truncateText(cleanupSentence(fallback).toLowerCase().replace(/\s+/g, "_"), 48);
 }
 
 function normalizeTag(value: string, raw = ""): string {
@@ -598,7 +611,7 @@ function normalizeForComparison(value: string): string {
     .trim();
 }
 
-function truncate(value: string, max: number): string {
+function truncateText(value: string, max: number): string {
   if (value.length <= max) return value;
   return `${value.slice(0, max - 3).trim()}...`;
 }
