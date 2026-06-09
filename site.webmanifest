@@ -7,9 +7,10 @@
   "theme_color": "#11131a",
   "icons": [
     {
-      "src": "/debrief-mark-gold.png",
+      "src": "/debrief-mark-icon-dark.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ]
 }
