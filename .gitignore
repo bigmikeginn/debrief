@@ -38,8 +38,8 @@ login-fallback.[a-f0-9]*.js
 !debrief-touch-feedback.20260430g.js
 !login-fallback.20260430g.js
 # Keep latest minified versions (deployed to production)
-!debrief-viewer.10d28c90.js
-!debrief-viewer.16e3f99e.css
+!debrief-viewer.23e2b4bb.js
+!debrief-viewer.11b11fd2.css
 !debrief-touch-feedback.a700bae0.js
 !login-fallback.92d54de8.js
 
