@@ -271,6 +271,9 @@ async function runStage1(job: ParseJobRow, debrief: DebriefRow) {
     topic_secondary: parsed.topicSecondary,
     topic_tags: parsed.tags,
     action_items: parsed.actionItems,
+    key_points: parsed.keyPoints,
+    technique: parsed.technique,
+    technique_type: parsed.techniqueType,
     parse_confidence: confidence,
     parse_status: parseStatus,
     parse_stage: 1,
@@ -351,6 +354,9 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
   topicSecondary: string;
   tags: string[];
   actionItems: string[];
+  keyPoints: string[];
+  technique: string | null;
+  techniqueType: string | null;
   confidence: number | null;
 }> {
   if (!OPENROUTER_API_KEY) {
@@ -360,7 +366,7 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
   const prompt = [
     "You are a universal debrief parser.",
     "Return valid JSON only with exactly these keys:",
-    "title, summary, domain, topic_primary, topic_secondary, tags, action_items, confidence",
+    "title, summary, domain, topic_primary, topic_secondary, tags, action_items, key_points, technique, technique_type, confidence",
     "Rules:",
     "- title: concise 3-8 words",
     "- summary: 1-2 sentences under 220 chars",
@@ -369,6 +375,9 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
     "- topic_secondary: specific subtopic, not a full sentence",
     "- tags: 2-6 short tags, 1-3 words each; do not copy full input sentences",
     "- action_items: 0-5 concrete next actions",
+    "- key_points: 2-4 short bullet takeaways distilled from the note, each under 80 chars",
+    "- technique: name of the specific technique discussed, or null if not applicable",
+    "- technique_type: one of choke, arm_attack, leg_attack, sweep, escape, guard_pass, guard_retention, takedown, back_control, mount, side_control, other; or null if not a martial arts technique",
     "- confidence: number from 0 to 1",
     `If date context needed, assume ${fallbackDate}.`,
     `Input: ${rawText}`,
@@ -385,7 +394,7 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
     body: JSON.stringify({
       model: MODEL_REFINER,
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 450,
+      max_tokens: 650,
       temperature: 0.2,
     }),
   });
@@ -409,6 +418,9 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
     .filter(Boolean)
     .slice(0, 8);
   const actionItems = normalizeStringArray(parsed.action_items).map((v) => truncate(v, 120)).slice(0, 6);
+  const keyPoints = normalizeStringArray(parsed.key_points).map((v) => truncate(v, 80)).slice(0, 4);
+  const technique = normalizeTechniqueField(parsed.technique);
+  const techniqueType = normalizeTechniqueType(parsed.technique_type);
   const confidence = asNumber(parsed.confidence);
 
   return {
@@ -419,6 +431,9 @@ async function refineUniversalParse(rawText: string, fallbackDate: string): Prom
     topicSecondary,
     tags: tags.length > 0 ? tags : normalizeFallbackTags(domain, topicPrimary, topicSecondary),
     actionItems,
+    keyPoints,
+    technique,
+    techniqueType,
     confidence,
   };
 }
@@ -601,4 +616,21 @@ function normalizeForComparison(value: string): string {
 function truncate(value: string, max: number): string {
   if (value.length <= max) return value;
   return `${value.slice(0, max - 3).trim()}...`;
+}
+
+function normalizeTechniqueField(value: unknown): string | null {
+  const s = asString(value as string).trim();
+  if (!s || s.toLowerCase() === "null" || s.toLowerCase() === "none") return null;
+  return truncate(s, 120);
+}
+
+function normalizeTechniqueType(value: unknown): string | null {
+  const allowed = new Set([
+    "choke", "arm_attack", "leg_attack", "sweep", "escape",
+    "guard_pass", "guard_retention", "takedown", "back_control",
+    "mount", "side_control", "other",
+  ]);
+  const s = asString(value as string).toLowerCase().trim().replace(/\s+/g, "_");
+  if (allowed.has(s)) return s;
+  return null;
 }
