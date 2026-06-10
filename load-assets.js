@@ -1,5 +1,9 @@
 // Load versioned assets from manifest
 // This script dynamically injects CSS and JS based on the deploy-manifest.json
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+
 (async () => {
   try {
     const manifest = await fetch('/deploy-manifest.json').then(r => r.json());
