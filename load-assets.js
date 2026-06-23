@@ -2,7 +2,7 @@
 // This script dynamically injects CSS and JS based on the deploy-manifest.json
 (async () => {
   try {
-    const manifest = await fetch('/deploy-manifest.json?v=2026-06-02-insight-5', { cache: 'no-store' }).then(r => r.json());
+    const manifest = await fetch('/deploy-manifest.json?v=2026-06-23-keyboard-safe-1', { cache: 'no-store' }).then(r => r.json());
     const { css, js, fallback, touchFeedback } = manifest.assets;
 
     // Inject CSS
@@ -40,20 +40,20 @@
     // This allows graceful degradation if deploy-manifest.json is not yet deployed
     const linkCSS = document.createElement('link');
     linkCSS.rel = 'stylesheet';
-    linkCSS.href = 'debrief-viewer.20260430g.css?v=2026-06-02-insight-5';
+    linkCSS.href = 'debrief-viewer.20260430g.css?v=2026-06-23-keyboard-safe-1';
     document.head.appendChild(linkCSS);
 
     const scriptFallback = document.createElement('script');
-    scriptFallback.src = 'login-fallback.92d54de8.js?v=2026-06-02-insight-5';
+    scriptFallback.src = 'login-fallback.92d54de8.js?v=2026-06-23-keyboard-safe-1';
     document.body.appendChild(scriptFallback);
 
     const scriptMain = document.createElement('script');
     scriptMain.type = 'module';
-    scriptMain.src = 'debrief-viewer.20260430g.js?v=2026-06-02-insight-5';
+    scriptMain.src = 'debrief-viewer.20260430g.js?v=2026-06-23-keyboard-safe-1';
     document.body.appendChild(scriptMain);
 
     const scriptTouch = document.createElement('script');
-    scriptTouch.src = 'debrief-touch-feedback.20260430g.js?v=2026-06-02-insight-5';
+    scriptTouch.src = 'debrief-touch-feedback.20260430g.js?v=2026-06-23-keyboard-safe-1';
     document.body.appendChild(scriptTouch);
   }
 })();

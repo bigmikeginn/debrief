@@ -48,9 +48,70 @@ body.drawer-open {
   overflow: hidden;
 }
 
+body[data-auth-state="booting"],
+body[data-auth-state="resolving"] {
+  overflow: hidden;
+  background: #090a0d !important;
+}
+
+body[data-auth-state="booting"] .shell,
+body[data-auth-state="resolving"] .shell {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body[data-auth-state="ready"] .auth-boot-screen {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 body.auth-transitioning {
   overflow: hidden;
   background: #090a0d !important;
+}
+
+.auth-boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: radial-gradient(circle at 50% 20%, rgba(201, 166, 75, 0.16), transparent 34rem), #090a0d;
+  color: #f5efe4;
+  transition: opacity 220ms ease, visibility 220ms ease;
+}
+
+.auth-boot-card {
+  width: min(28rem, 100%);
+  padding: 1.25rem;
+  border: 1px solid rgba(201, 166, 75, 0.24);
+  border-radius: 24px;
+  background: rgba(15, 17, 22, 0.86);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.auth-boot-card img {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
+}
+
+.auth-boot-card p {
+  margin: 0.35rem 0 0;
+  color: #b9c0ca;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.auth-boot-card strong {
+  display: block;
+  font-family: "Outfit", system-ui, sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
 }
 
 .auth-transition-curtain {
@@ -82,6 +143,7 @@ body.auth-transitioning .shell {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .auth-boot-screen,
   .auth-transition-curtain,
   .shell {
     transition-duration: 0.001ms !important;
@@ -2941,7 +3003,7 @@ label:has(input[type="radio"]) {
 /* New debrief modal: keep the save action visible on phones */
 #newDebriefModalOverlay {
  align-items: flex-start;
- padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem 0.75rem;
+ padding: clamp(1rem, 6vh, 4rem) 1rem 1rem;
  overflow-y: auto;
  overscroll-behavior: contain;
 }
@@ -2949,7 +3011,7 @@ label:has(input[type="radio"]) {
 #newDebriefModal {
  display: flex;
  flex-direction: column;
- max-height: min(90vh, calc(var(--new-debrief-viewport-height, 100dvh) - 1.5rem));
+ max-height: min(90vh, calc(100dvh - 2rem));
  overflow: hidden;
 }
 
@@ -2967,12 +3029,22 @@ label:has(input[type="radio"]) {
 
 @media (max-width: 680px) {
  #newDebriefModalOverlay {
- padding: max(0.6rem, env(safe-area-inset-top)) 0.6rem 0.6rem;
+ top: var(--new-debrief-viewport-top, 0px);
+ bottom: auto;
+ height: var(--new-debrief-viewport-height, 100dvh);
+ padding: max(0.6rem, env(safe-area-inset-top)) 0.6rem max(0.6rem, env(safe-area-inset-bottom));
+ scroll-padding-bottom: calc(1rem + var(--new-debrief-keyboard-inset, 0px));
  }
 
  #newDebriefModal {
   width: calc(100vw - 1.2rem);
   max-height: calc(var(--new-debrief-viewport-height, 100dvh) - 1.2rem);
+ }
+
+ #newDebriefModal .modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
  }
 }
 

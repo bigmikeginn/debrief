@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-auth-mode="login">
+<html lang="en" data-auth-mode="login" data-auth-state="booting">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,11 +12,26 @@
   <style>
     html { background: #090a0d; color-scheme: dark; }
     body { background: #090a0d; }
+    body[data-auth-state="booting"] { min-height: 100vh; overflow: hidden; }
+    body[data-auth-state="booting"] .shell { opacity: 0; visibility: hidden; pointer-events: none; }
+    body[data-auth-state="ready"] .auth-boot-screen { opacity: 0; visibility: hidden; pointer-events: none; }
+    .auth-boot-screen { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 2rem; background: radial-gradient(circle at 50% 20%, rgba(201, 166, 75, 0.16), transparent 34rem), #090a0d; color: #f5efe4; transition: opacity 220ms ease, visibility 220ms ease; }
+    .auth-boot-card { width: min(28rem, 100%); padding: 1.25rem; border: 1px solid rgba(201, 166, 75, 0.24); border-radius: 24px; background: rgba(15, 17, 22, 0.86); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); text-align: center; }
+    .auth-boot-card img { width: 3.5rem; height: 3.5rem; object-fit: contain; margin-bottom: 0.75rem; }
+    .auth-boot-card p { margin: 0.35rem 0 0; color: #b9c0ca; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    .auth-boot-card strong { display: block; font-family: "Outfit", system-ui, sans-serif; font-size: 1.05rem; letter-spacing: 0.01em; }
   </style>
 </head>
-<body>
+<body data-auth-state="booting">
+  <div class="auth-boot-screen" aria-live="polite" aria-label="Opening Debrief">
+    <div class="auth-boot-card">
+      <img src="debrief-mark-gold.png" alt="">
+      <strong>Opening your Debrief archive</strong>
+      <p>Checking your session securely...</p>
+    </div>
+  </div>
   <div class="auth-transition-curtain" aria-hidden="true"></div>
-  <div class="shell">
+  <div class="shell" inert aria-hidden="true">
     <div id="toastContainer" class="toast-container"></div>
     <header class="topbar">
       <div>
@@ -287,7 +302,7 @@
     </section>
   </div>
 
-  <script src="load-assets.js?v=2026-06-02-insight-5"></script>
+  <script src="load-assets.js?v=2026-06-23-keyboard-safe-1"></script>
 </body>
 </html>
 
