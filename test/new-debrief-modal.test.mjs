@@ -10,6 +10,14 @@ test("new debrief modal removes helper copy to preserve vertical space", () => {
   assert.doesNotMatch(viewerHtml, /Keep it simple/i);
 });
 
+test("new debrief modal is not nested inside the filtered archive card", () => {
+  assert.match(viewerHtml, /<section[^>]+id="appCard"/);
+  assert.match(
+    viewerHtml,
+    /<\/section>\s+<!-- New Debrief Modal -->\s+<div id="newDebriefModalOverlay"/,
+  );
+});
+
 test("new debrief modal stays top aligned on desktop", () => {
   assert.match(
     viewerCss,
