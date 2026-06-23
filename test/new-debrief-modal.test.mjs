@@ -13,7 +13,7 @@ test("new debrief modal removes helper copy to preserve vertical space", () => {
 test("new debrief modal stays top aligned on desktop", () => {
   assert.match(
     viewerCss,
-    /#newDebriefModalOverlay\s*{[^}]*align-items:\s*flex-start[^}]*padding:\s*clamp\(1rem,\s*6vh,\s*4rem\)/s,
+    /#newDebriefModalOverlay\s*{[^}]*align-items:\s*flex-start[^}]*justify-content:\s*flex-start[^}]*padding:\s*clamp\(1rem,\s*6vh,\s*4rem\)/s,
   );
   assert.match(
     viewerCss,
