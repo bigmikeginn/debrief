@@ -39,9 +39,11 @@ login-fallback.[a-f0-9]*.js
 !login-fallback.20260430g.js
 # Keep latest minified versions (deployed to production)
 !debrief-viewer.23e2b4bb.js
+!debrief-viewer.5c6fd65e.js
 !debrief-viewer.11b11fd2.css
 !debrief-viewer.866ac29c.css
 !debrief-viewer.8779631a.css
+!debrief-viewer.11d1abe1.css
 !debrief-touch-feedback.a700bae0.js
 !login-fallback.92d54de8.js
 

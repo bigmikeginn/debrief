@@ -37,6 +37,7 @@ let activeShareEntry = null;
 let activeShareRecipientIds = new Set();
 let activeShareWholeClub = false;
 let newDebriefViewportTrackingInstalled = false;
+let newDebriefActionScrollFrame = 0;
 let authArrivalTransitionTimer = null;
 let authTransitionRequested = false;
 let inPasswordRecovery = false;
@@ -204,6 +205,10 @@ function boot() {
   if (newDebriefModalOverlay) newDebriefModalOverlay.addEventListener("click", (event) => {
     if (event.target === newDebriefModalOverlay) closeNewDebriefModal();
   });
+  if (newDebriefText) {
+    newDebriefText.addEventListener("focus", scheduleNewDebriefActionVisibility);
+    newDebriefText.addEventListener("input", scheduleNewDebriefActionVisibility);
+  }
   if (submitDebriefButton) submitDebriefButton.addEventListener("click", handleNativeSubmit);
   if (authForm) {
     authForm.addEventListener("submit", (event) => {
@@ -2923,7 +2928,8 @@ function openNewDebriefModal() {
   if (newDebriefStatus) newDebriefStatus.textContent = "";
   newDebriefModalOverlay.classList.remove("hidden");
   window.requestAnimationFrame(syncNewDebriefViewportHeight);
-  newDebriefText.focus();
+  newDebriefText.focus({ preventScroll: true });
+  scheduleNewDebriefActionVisibility();
 }
 
 function closeNewDebriefModal() {
@@ -2943,8 +2949,49 @@ function installNewDebriefViewportTracking() {
 }
 
 function syncNewDebriefViewportHeight() {
-  const viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
+  const viewport = window.visualViewport;
+  const viewportHeight = viewport?.height || window.innerHeight || 0;
+  const viewportTop = viewport?.offsetTop || 0;
+  const layoutHeight = window.innerHeight || viewportHeight || 0;
+  const keyboardInset = Math.max(0, layoutHeight - viewportHeight - viewportTop);
   document.documentElement.style.setProperty("--new-debrief-viewport-height", `${Math.max(0, Math.round(viewportHeight))}px`);
+  document.documentElement.style.setProperty("--new-debrief-viewport-top", `${Math.max(0, Math.round(viewportTop))}px`);
+  document.documentElement.style.setProperty("--new-debrief-keyboard-inset", `${Math.round(keyboardInset)}px`);
+  if (shouldUseNewDebriefKeyboardGuard()) scheduleNewDebriefActionVisibility();
+}
+
+function scheduleNewDebriefActionVisibility() {
+  if (!shouldUseNewDebriefKeyboardGuard()) return;
+  if (newDebriefActionScrollFrame) window.cancelAnimationFrame(newDebriefActionScrollFrame);
+  newDebriefActionScrollFrame = window.requestAnimationFrame(() => {
+    newDebriefActionScrollFrame = 0;
+    keepNewDebriefActionVisible();
+  });
+}
+
+function shouldUseNewDebriefKeyboardGuard() {
+  const viewport = window.visualViewport;
+  const keyboardLikelyOpen = viewport && window.innerHeight - viewport.height > 120;
+  return window.matchMedia("(max-width: 680px)").matches || Boolean(keyboardLikelyOpen);
+}
+
+function keepNewDebriefActionVisible() {
+  if (
+    !newDebriefModalOverlay ||
+    !submitDebriefButton ||
+    newDebriefModalOverlay.classList.contains("hidden")
+  ) {
+    return;
+  }
+
+  const viewport = window.visualViewport;
+  const visibleBottom = (viewport?.offsetTop || 0) + (viewport?.height || window.innerHeight || 0) - 16;
+  const buttonRect = submitDebriefButton.getBoundingClientRect();
+  if (buttonRect.bottom <= visibleBottom) return;
+  newDebriefModalOverlay.scrollBy({
+    top: buttonRect.bottom - visibleBottom + 16,
+    behavior: "smooth",
+  });
 }
 
 async function pollParseStatus(debriefId) {
