@@ -47,6 +47,18 @@ test("new debrief modal tracks mobile keyboard viewport and keeps save visible",
   );
   assert.match(
     viewerCss,
+    /@media \(max-width:\s*680px\)\s*{[\s\S]*#newDebriefModal\s*{[^}]*height:\s*calc\(var\(--new-debrief-viewport-height,\s*100dvh\) - 1\.2rem\)/s,
+  );
+  assert.match(
+    viewerCss,
+    /#newDebriefModal\s+\.modal-status:empty\s*{[^}]*display:\s*none/s,
+  );
+  assert.match(
+    viewerCss,
+    /#newDebriefModal\s+\.modal-actions\s*{[^}]*margin-top:\s*auto/s,
+  );
+  assert.match(
+    viewerCss,
     /@media \(max-width:\s*680px\)\s*{[\s\S]*#newDebriefModalTitle\s*{[^}]*font-size:\s*clamp\(1\.05rem,\s*4\.8vw,\s*1\.25rem\)/s,
   );
 });
