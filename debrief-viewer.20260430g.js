@@ -2935,6 +2935,7 @@ function openNewDebriefModal() {
 function closeNewDebriefModal() {
   if (!newDebriefModalOverlay) return;
   newDebriefModalOverlay.classList.add("hidden");
+  document.documentElement.classList.remove("new-debrief-keyboard-open");
 }
 
 function installNewDebriefViewportTracking() {
@@ -2957,6 +2958,7 @@ function syncNewDebriefViewportHeight() {
   document.documentElement.style.setProperty("--new-debrief-viewport-height", `${Math.max(0, Math.round(viewportHeight))}px`);
   document.documentElement.style.setProperty("--new-debrief-viewport-top", `${Math.max(0, Math.round(viewportTop))}px`);
   document.documentElement.style.setProperty("--new-debrief-keyboard-inset", `${Math.round(keyboardInset)}px`);
+  document.documentElement.classList.toggle("new-debrief-keyboard-open", keyboardInset > 80);
   if (shouldUseNewDebriefKeyboardGuard()) scheduleNewDebriefActionVisibility();
 }
 

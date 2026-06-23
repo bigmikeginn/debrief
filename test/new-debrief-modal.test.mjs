@@ -37,6 +37,8 @@ test("new debrief modal tracks mobile keyboard viewport and keeps save visible",
   assert.match(viewerBundle, /--new-debrief-keyboard-inset/);
   assert.match(viewerBundle, /function keepNewDebriefActionVisible\(/);
   assert.match(viewerBundle, /submitDebriefButton\.getBoundingClientRect\(\)/);
+  assert.match(viewerBundle, /classList\.toggle\("new-debrief-keyboard-open", keyboardInset > 80\)/);
+  assert.match(viewerBundle, /classList\.remove\("new-debrief-keyboard-open"\)/);
   assert.match(
     viewerCss,
     /@media \(max-width:\s*680px\)\s*{[\s\S]*#newDebriefModalOverlay\s*{[^}]*height:\s*var\(--new-debrief-viewport-height/s,
@@ -56,6 +58,14 @@ test("new debrief modal tracks mobile keyboard viewport and keeps save visible",
   assert.match(
     viewerCss,
     /#newDebriefModal\s+\.modal-actions\s*{[^}]*margin-top:\s*auto/s,
+  );
+  assert.match(
+    viewerCss,
+    /\.new-debrief-keyboard-open\s+#newDebriefModal\s*{[^}]*height:\s*calc\(var\(--new-debrief-viewport-height,\s*100dvh\) - 0\.8rem\)/s,
+  );
+  assert.match(
+    viewerCss,
+    /\.new-debrief-keyboard-open\s+#newDebriefModal\s+\.modal-actions\s*{[^}]*padding:\s*0\.7rem 0\.75rem max\(0\.7rem,\s*env\(safe-area-inset-bottom\)\)/s,
   );
   assert.match(
     viewerCss,
