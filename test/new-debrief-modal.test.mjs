@@ -21,7 +21,7 @@ test("new debrief modal is not nested inside the filtered archive card", () => {
 test("new debrief modal stays top aligned on desktop", () => {
   assert.match(
     viewerCss,
-    /#newDebriefModalOverlay\s*{[^}]*align-items:\s*flex-start[^}]*justify-content:\s*flex-start[^}]*padding:\s*clamp\(1rem,\s*6vh,\s*4rem\)/s,
+    /#newDebriefModalOverlay\s*{[^}]*align-items:\s*flex-start[^}]*justify-content:\s*center[^}]*padding:\s*clamp\(1rem,\s*6vh,\s*4rem\)/s,
   );
   assert.match(
     viewerCss,
@@ -44,5 +44,9 @@ test("new debrief modal tracks mobile keyboard viewport and keeps save visible",
   assert.match(
     viewerCss,
     /@media \(max-width:\s*680px\)\s*{[\s\S]*#newDebriefModal\s+\.modal-actions\s*{[^}]*position:\s*sticky/s,
+  );
+  assert.match(
+    viewerCss,
+    /@media \(max-width:\s*680px\)\s*{[\s\S]*#newDebriefModalTitle\s*{[^}]*font-size:\s*clamp\(1\.05rem,\s*4\.8vw,\s*1\.25rem\)/s,
   );
 });
